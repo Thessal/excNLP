@@ -2,6 +2,8 @@
 
 Visualize logic and sentiment.
 
+Summarize
+
 Logical deduction
 
 
@@ -13,6 +15,20 @@ Logical deduction
 * coral TPU
 * pandas
 * matplotlib
-
-
+  
+  
 * coq
+
+
+### TODO 
+
+Testing skillsets
+* Visualization
+* Coral
+
+Learning
+* Coq
+
+Someday...
+* Tagger
+* OCR error correction
