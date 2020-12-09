@@ -60,4 +60,5 @@ POS_snu_tta = {
     'UN': 'NA',
     'UV': 'NA',
     'UE': 'NA',
+    'EMO': 'NA'
 }
