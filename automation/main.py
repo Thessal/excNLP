@@ -24,8 +24,8 @@ import numpy as np
 
 def preprocess(_text):
     def _whitespace(_text):
-        #t = _text.replace('\n', ' ')
-        t = ' '.join(_text.split())
+        t = _text.replace('\n', ' ')
+        t = ' '.join(t.split())
         return t
 
     def _unknown_characters(_text):
