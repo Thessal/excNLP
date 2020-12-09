@@ -164,6 +164,8 @@ for raw_text_path in raw_texts :
 # TODO : Use TPU
 # TODO : Benchmark pooling methods
 # TODO : Use FullTokenizer for preprocessing
+# TODO : VALIDATION
+
 debug = False
 if debug:
     from sklearn.manifold import TSNE

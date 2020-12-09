@@ -9,14 +9,20 @@ Logical deduction
 
 ### Dependency
 
+Runtime
+
 * python 3.8
+* tensorflow 2
 * konlpy.tag.Kkma
-* KorBERT
+* kkma (proprietary)
+* KorBERT (proprietary)
+* OCR results (proprietary)
+
+Dev
+
 * coral TPU
 * pandas
 * matplotlib
-  
-  
 * coq
 
 
