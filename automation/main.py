@@ -105,6 +105,8 @@ class tpu_model(keras.Model):
             # Convert the model.
             model = self
             converter = tf.lite.TFLiteConverter.from_keras_model(model)
+            converter.optimizations = [tf.lite.Optimize.DEFAULT]  # Accuracy loss
+
             tflite_model = converter.convert()
             # Save the model.
             with open(model_path, 'wb') as f:
@@ -189,8 +191,7 @@ def load_bert(model_dir, model_file="model.ckpt", batch_size=32, max_seq_len=512
     # model = keras.Model(inputs=[l_input_ids, l_token_type_ids], outputs=output)
     # model.build(input_shape=[(None, max_seq_len), (None, max_seq_len)])
 
-    if not USE_TPU:
-        l_bert.apply_adapter_freeze()
+    l_bert.apply_adapter_freeze()
     bert.load_stock_weights(l_bert, model_ckpt)
     return model
 
@@ -213,7 +214,7 @@ vocab_file = 'proprietary/korbert/002_bert_morp_tensorflow/vocab.korean_morp.lis
 model_dir = "proprietary/korbert/002_bert_morp_tensorflow/"
 bert_params = bert.params_from_pretrained_ckpt(model_dir)
 max_seq_len = 64  # bert_params.max_position_embeddings # 128 # 64
-batch_size = 1
+batch_size = 32
 # pooling_method = 'average'
 pooling_method = 'default'
 
@@ -229,15 +230,17 @@ for raw_text_path in raw_texts:
     model = load_bert(model_dir, model_file="model.ckpt", batch_size=batch_size, max_seq_len=len(sentence_vectors[0]),
                       pooling=pooling_method)
     embed_result = np.array(embed_sentence(model, sentence_vectors, bert_params, batch_size, limit=lines_to_read_limit))
+    print("Clustering")
     summary_idx = ClusterFeatures(features=embed_result).cluster(ratio=summary_ratio,
                                                                  num_sentences=summary_lines_override)
+    print("Clustering Done")
     summary = '\n'.join([orig_text[idx] for idx in summary_idx])
     summary_file_path = os.path.join(summary_dir, os.path.splitext(os.path.basename(raw_text_path))[0] + '.txt')
     with open(summary_file_path, "w") as f:
         f.write(summary)
 
 # TODO : Check normalization of clustering input (because pooling method is average)
-# FIXME : TPU optimization problem
+# FIXME : TPU optimization problem #@tf.function # https://www.tensorflow.org/guide/graph_optimization # print(tf.config.optimizer.get_experimental_options())
 # TODO : Benchmark pooling methods
 # TODO : Use FullTokenizer for preprocessing
 # TODO : VALIDATION

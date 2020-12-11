@@ -57,6 +57,60 @@ inputs	outputs
 ```
 Graph 최적화에 문제가 있다. 원인 분석 필요.
 
+
+```
+Mac optimized TF (https://github.com/apple/tensorflow_macos)
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/apple/tensorflow_macos/master/scripts/download_and_install.sh)"
+/Users/jongkook90/Library/Caches/pypoetry/virtualenvs/automation-a-Kk_Zvv-py3.8/
+
+Performance review 
+Mac mini 2019
+
+mac TF : 
+
+10841.1ms
+Embedding : 32/4726
+21505.6ms
+Embedding : 64/4726
+30628.3ms
+Embedding : 96/4726
+28441.4ms
+Embedding : 128/4726
+29362.4ms
+Embedding : 160/4726
+
+
+Coral : 
+
+11239.2ms
+Embedding : 32/4726
+10380.7ms
+Embedding : 64/4726
+10954.5ms
+Embedding : 96/4726
+10498.0ms
+Embedding : 128/4726
+10364.4ms
+Embedding : 160/4726
+
+
+CPU :
+
+3979.7ms
+Embedding : 32/4726
+2090.6ms
+Embedding : 64/4726
+1962.4ms
+Embedding : 96/4726
+2076.7ms
+Embedding : 128/4726
+2030.2ms
+Embedding : 160/4726
+
+Lets just buy some GPU
+```
+
+
 ### TODO
  * inter-sentence summarization 
    * Sentence pooling method
