@@ -382,6 +382,22 @@ python-versions = "*"
 pyasn1 = ">=0.4.6,<0.5.0"
 
 [[package]]
+name = "pycoral"
+version = "1.0.0"
+description = "Coral Python API"
+category = "main"
+optional = false
+python-versions = ">=3.5.2"
+
+[package.dependencies]
+numpy = ">=1.12.1"
+Pillow = ">=4.0.0"
+tflite-runtime = "2.5.0"
+
+[package.source]
+type = "url"
+url = "https://github.com/google-coral/pycoral/releases/download/release-frogfish/pycoral-1.0.0-cp38-cp38-macosx_10_15_x86_64.whl"
+[[package]]
 name = "pyparsing"
 version = "2.4.7"
 description = "Python parsing module"
@@ -579,6 +595,21 @@ optional = false
 python-versions = "*"
 
 [[package]]
+name = "tflite-runtime"
+version = "2.5.0"
+description = "TensorFlow Lite is for mobile and embedded devices."
+category = "main"
+optional = false
+python-versions = "*"
+
+[package.dependencies]
+numpy = ">=1.12.1"
+
+[package.source]
+type = "url"
+url = "https://github.com/google-coral/pycoral/releases/download/release-frogfish/tflite_runtime-2.5.0-cp38-cp38-macosx_10_15_x86_64.whl"
+
+[[package]]
 name = "threadpoolctl"
 version = "2.1.0"
 description = "threadpoolctl"
@@ -650,7 +681,7 @@ python-versions = "*"
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.8"
-content-hash = "3eebf84031d92de38e4c3bf8c4e8671e4763fbabe62ff79011138527048cf929"
+content-hash = "0bb9c83137262aeadba14b2b9d87c5f2b58fc5007251ea7aab824d33832dce6f"
 
 [metadata.files]
 absl-py = [
@@ -1073,6 +1104,7 @@ pyasn1-modules = [
     {file = "pyasn1_modules-0.2.8-py3.6.egg", hash = "sha256:cbac4bc38d117f2a49aeedec4407d23e8866ea4ac27ff2cf7fb3e5b570df19e0"},
     {file = "pyasn1_modules-0.2.8-py3.7.egg", hash = "sha256:c29a5e5cc7a3f05926aff34e097e84f8589cd790ce0ed41b67aed6857b26aafd"},
 ]
+pycoral = []
 pyparsing = [
     {file = "pyparsing-2.4.7-py2.py3-none-any.whl", hash = "sha256:ef9d7589ef3c200abe66653d3f1ab1033c3c419ae9b9bdb1240a85b024efc88b"},
     {file = "pyparsing-2.4.7.tar.gz", hash = "sha256:c203ec8783bf771a155b207279b9bccb8dea02d8f0c9e5f8ead507bc3246ecc1"},
@@ -1181,6 +1213,7 @@ tensorflow-estimator = [
 termcolor = [
     {file = "termcolor-1.1.0.tar.gz", hash = "sha256:1d6d69ce66211143803fbc56652b41d73b4a400a2891d7bf7a1cdf4c02de613b"},
 ]
+tflite-runtime = []
 threadpoolctl = [
     {file = "threadpoolctl-2.1.0-py3-none-any.whl", hash = "sha256:38b74ca20ff3bb42caca8b00055111d74159ee95c4370882bbff2b93d24da725"},
     {file = "threadpoolctl-2.1.0.tar.gz", hash = "sha256:ddc57c96a38beb63db45d6c159b5ab07b6bced12c45a1f07b2b92f272aebfa6b"},

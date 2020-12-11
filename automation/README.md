@@ -25,6 +25,16 @@ Dev
 * matplotlib
 * coq
 
+Coral
+
+`
+https://coral.ai/docs/accelerator/get-started/#2-install-the-tensorflow-lite-library
+https://www.tensorflow.org/lite/guide/python
+tflite_runtime
+https://github.com/google-coral/pycoral/releases/download/release-frogfish/tflite_runtime-2.5.0-cp38-cp38-macosx_10_15_x86_64.whl
+pycoral
+https://github.com/google-coral/pycoral/releases/download/release-frogfish/pycoral-1.0.0-cp38-cp38-macosx_10_15_x86_64.whl
+`
 
 ### TODO 
 
