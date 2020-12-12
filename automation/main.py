@@ -140,11 +140,7 @@ class tpu_model(keras.Model):
         # input_shape = input_details[0]['shape']
         # input_data = np.array(np.random.random_sample(input_shape), dtype=np.float32)
         interpreter.set_tensor(input_details[0]['index'], input_data)
-        import time
-        start = time.perf_counter()
         interpreter.invoke()
-        inference_time = time.perf_counter() - start
-        print('%.1fms' % (inference_time * 1000))
         # The function `get_tensor()` returns a copy of the tensor data.
         # Use `tensor()` in order to get a pointer to the tensor.
         output_data = interpreter.get_tensor(output_details[0]['index'])
@@ -201,7 +197,11 @@ def embed_sentence(model, sentence_vectors, bert_params, batch_size, limit=None)
     if limit is None: limit = len(sentence_vectors)
     for offset in range(int(int(limit) / batch_size)):
         sentence_tensors = tf.convert_to_tensor(sentence_vectors[offset:offset + batch_size], dtype=tf.int32)
+        import time
+        start = time.perf_counter()
         result = model.predict(sentence_tensors)
+        inference_time = time.perf_counter() - start
+        print('%.1fms' % (inference_time * 1000))
         assert result.shape == (batch_size, bert_params.hidden_size)
         embed_result += result.tolist()
         print(f"Embedding : {len(embed_result)}/{limit}")
@@ -223,7 +223,7 @@ lines_to_read_limit = None  # 1000
 summary_ratio = 0.1
 summary_lines_override = None  # 100
 
-USE_TPU = True
+USE_TPU = False #True # False
 for raw_text_path in raw_texts:
     sentences, orig_text = sentences_from_raw_text(raw_text_path, limit=None, force=False)
     sentence_vectors = tokens_to_tensors(sentences, max_seq_len, vocab_file)
