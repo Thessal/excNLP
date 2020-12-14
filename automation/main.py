@@ -209,7 +209,8 @@ def embed_sentence(model, sentence_vectors, bert_params, batch_size, limit=None)
     return embed_result
 
 
-raw_texts = [f"proprietary/text/{x}.txt" for x in ["공정하다는 착각", "생각에 관한 생각", "시지프 신화", "의료윤리", "행복의 기원"]]
+#raw_texts = [f"proprietary/text/{x}.txt" for x in ["공정하다는 착각", "생각에 관한 생각", "시지프 신화", "의료윤리", "행복의 기원"]]
+raw_texts = [f"proprietary/text/{x}.txt" for x in ["담론과 진실"]]
 vocab_file = 'proprietary/korbert/002_bert_morp_tensorflow/vocab.korean_morp.list'
 model_dir = "proprietary/korbert/002_bert_morp_tensorflow/"
 bert_params = bert.params_from_pretrained_ckpt(model_dir)
@@ -220,7 +221,7 @@ pooling_method = 'default'
 
 summary_dir = "proprietary/summary/"
 lines_to_read_limit = None  # 1000
-summary_ratio = 0.1
+summary_ratio = 0.03 #0.1
 summary_lines_override = None  # 100
 
 USE_TPU = False #True # False
