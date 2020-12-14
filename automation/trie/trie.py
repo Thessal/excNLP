@@ -20,17 +20,22 @@ class TrieNode:
 
 
 class Trie(object):
+    from .explode import assemble
+    from .explode import explode
     """The trie object"""
 
-    def __init__(self):
+    def __init__(self, list_words=[]):
         """
         The trie has at least the root node.
         The root node does not store any character
         """
         self.root = TrieNode("")
+        for w in (w for w in list_words):
+            self.insert(w)
 
-    def insert(self, word):
+    def insert(self, word, raw=False):
         """Insert a word into the trie"""
+        if not raw: word = self.explode(word)
         node = self.root
 
         # Loop through each character in the word
@@ -65,11 +70,12 @@ class Trie(object):
         for child in node.children.values():
             self.dfs(child, prefix + node.char)
 
-    def query(self, x):
+    def query(self, x, raw=False):
         """Given an input (a prefix), retrieve all words stored in
         the trie with that prefix, sort the words by the number of
         times they have been inserted
         """
+        if not raw: x = self.explode.__call__(x)
         # Use a variable within the class to keep all possible outputs
         # As there can be more than one word with such prefix
         self.output = []
@@ -89,10 +95,8 @@ class Trie(object):
         # Sort the results in reverse order and return
         return sorted(self.output, key=lambda x: x[1], reverse=True)
 
-    def top_n_items(self, n):
-        from .explode import explode
-        from .explode import assemble
-        freq = {assemble(w[0]): w[1] for w in self.query('')}
+    def top_n_items(self, n, raw=False):
+        freq = {w[0] if raw else self.assemble(w[0]): w[1] for w in self.query('', raw=raw)}
         top_words = sorted(freq.keys(), key=freq.get, reverse=True)[:min(n, len(freq))]
         return {w: freq[w] for w in top_words}
 

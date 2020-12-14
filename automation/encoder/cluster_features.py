@@ -8,6 +8,8 @@ from sklearn.cluster import KMeans
 from sklearn.decomposition import PCA
 from sklearn.mixture import GaussianMixture
 
+import os
+
 
 class ClusterFeatures(object):
     """
@@ -15,11 +17,11 @@ class ClusterFeatures(object):
     """
 
     def __init__(
-        self,
-        features: ndarray,
-        algorithm: str = 'kmeans',
-        pca_k: int = None,
-        random_state: int = 12345
+            self,
+            features: ndarray,
+            algorithm: str = 'kmeans',
+            pca_k: int = None,
+            random_state: int = 12345
     ):
         """
         :param features: the embedding matrix created by bert parent
@@ -113,3 +115,27 @@ class ClusterFeatures(object):
 
     def __call__(self, ratio: float = 0.1, num_sentences: int = None) -> List[int]:
         return self.cluster(ratio)
+
+
+class ClusterFeaturesSummarizer(ClusterFeatures):
+    def __init__(self, summary_ratio: float = 0.1, summary_lines_override: int = None):
+        """
+        :param summary_ratio: compression ratio
+        :param summary_lines_override: compression target size (if specified)
+        """
+        super().__init__(features=None)
+        self.ratio = summary_ratio
+        self.num_sentences = summary_lines_override
+
+    def summarize(self, legacy_doc, save_to_file=True):
+        super().__init__(features=legacy_doc["embeddings"])
+        summary_idx = self.cluster(ratio=self.ratio, num_sentences=self.num_sentences)
+        legacy_doc["summary_onehot"] = [False] * len(legacy_doc["embeddings"])
+        for i in summary_idx :
+            legacy_doc["summary_onehot"][i] = True
+        legacy_doc["summary"] = '\n'.join([legacy_doc["orig_text"][idx] for idx in summary_idx])
+        if save_to_file:
+            with open(legacy_doc["file_summary"], "w") as f:
+                print(legacy_doc["file_summary"])
+                f.write(legacy_doc["summary"])
+
