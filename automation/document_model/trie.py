@@ -13,6 +13,7 @@ class TrieNode:
         # a counter indicating how many times a word is inserted
         # (if this node's is_end is True)
         self.counter = 0
+        self.counter_recursive = 0
 
         # a dictionary of child nodes
         # keys are characters, values are nodes
@@ -20,22 +21,25 @@ class TrieNode:
 
 
 class Trie(object):
-    from .explode import assemble
-    from .explode import explode
+    from .explode import assemble as _assemble
+    from .explode import explode as _explode
     """The trie object"""
 
-    def __init__(self, list_words=[]):
+    def __init__(self, list_words=[], raw=False):
         """
         The trie has at least the root node.
         The root node does not store any character
         """
         self.root = TrieNode("")
+        self.output = []
+        self.assemble = self._assemble if raw else lambda x: x
+        self.explode = self._explode if raw else lambda x: x
         for w in (w for w in list_words):
             self.insert(w)
 
-    def insert(self, word, raw=False):
+    def insert(self, word):
         """Insert a word into the trie"""
-        if not raw: word = self.explode(word)
+        word = self.explode(word)
         node = self.root
 
         # Loop through each character in the word
@@ -49,6 +53,7 @@ class Trie(object):
                 new_node = TrieNode(char)
                 node.children[char] = new_node
                 node = new_node
+            node.counter_recursive += 1
 
         # Mark the end of a word
         node.is_end = True
@@ -56,7 +61,7 @@ class Trie(object):
         # Increment the counter to indicate that we see this word once more
         node.counter += 1
 
-    def dfs(self, node, prefix):
+    def dfs(self, node, prefix, include_subword=True):
         """Depth-first traversal of the trie
 
         Args:
@@ -64,18 +69,22 @@ class Trie(object):
             - prefix: the current prefix, for tracing a
                 word while traversing the trie
         """
-        if node.is_end:
-            self.output.append((prefix + node.char, node.counter))
+        if include_subword:
+            if node.is_end or len(node.children) > 2:
+                self.output.append((self.assemble(prefix + node.char), node.counter_recursive))
+        else:
+            if node.is_end:
+                self.output.append((self.assemble(prefix + node.char), node.counter))
 
         for child in node.children.values():
             self.dfs(child, prefix + node.char)
 
-    def query(self, x, raw=False):
+    def query(self, x):
         """Given an input (a prefix), retrieve all words stored in
         the trie with that prefix, sort the words by the number of
         times they have been inserted
         """
-        if not raw: x = self.explode.__call__(x)
+        x = self.explode(x)  # .__call__(x)
         # Use a variable within the class to keep all possible outputs
         # As there can be more than one word with such prefix
         self.output = []
@@ -95,8 +104,9 @@ class Trie(object):
         # Sort the results in reverse order and return
         return sorted(self.output, key=lambda x: x[1], reverse=True)
 
-    def top_n_items(self, n, raw=False):
-        freq = {w[0] if raw else self.assemble(w[0]): w[1] for w in self.query('', raw=raw)}
+    def top_n_items(self, n):
+        freq = {self.assemble(w[0]): w[1] for w in self.query('')}
+        freq = {k: v for k, v in freq.items() if len(k) > 1}
         top_words = sorted(freq.keys(), key=freq.get, reverse=True)[:min(n, len(freq))]
         return {w: freq[w] for w in top_words}
 

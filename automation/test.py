@@ -6,7 +6,7 @@ from document_model.main import legacy_sentences_from_raw_text
 # Parameters
 #
 print("Setup")
-path = "proprietary/text/*.txt"
+path = "proprietary/text/담론과 진실.txt"
 raw_texts = [f"proprietary/text/{x}.txt" for x in ["담론과 진실"]]
 read_line_limit = 300
 silent = True
@@ -26,9 +26,17 @@ doc = Document(path, limit=read_line_limit)
 for x in doc.trie():
     search = {w[0]: w[1] for w in x.query('승')}
     print(x.top_n_items(30))
-    # TODO : do TF-IDF to find keywords & do semantic paragraph
-    # TODO : coreference resolution
     break
+
+#
+# TF-IDF
+#
+#doc = Document(path, limit=read_line_limit)
+for res in doc.tfidf():
+    print(res)
+    break
+    # TODO : Kernel density estimation & segmentation -> semantic paragraphing
+    # TODO : coreference resolution
 
 #
 # Document Model (legacy)

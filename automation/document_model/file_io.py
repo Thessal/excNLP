@@ -12,7 +12,7 @@ class TextIO:
 
     def paragraphs(self):
         for fp in self.files():
-            yield fp.readlines()
+            yield [x.strip() for x in fp.readlines() if x.strip()]
 
     _documents = lambda paragraphs: ' '.join([x.strip() for x in paragraphs if x.strip()])
     _sentences = lambda paragraphs: [sentences.split(". ") for sentences in paragraphs]
