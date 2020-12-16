@@ -37,7 +37,12 @@ class Document(TextIO):
     from .explode import explode
     def tfidf(self, n=10):
         import numpy as np
-        for ps in self.paragraphs():
+
+        # docs = []
+        for ps in self.generate(unit="paragraphs", detail=True):
+            _ps = [(ps, idx) for ps, idx in ps[0]]
+            ps = [x[0] for x in _ps]
+            ps_idx = [x[1] for x in _ps]
             print(f"[document_model.tfidf]\n"
                   f"paragraph count: {len(ps)}\n"
                   f"sentence count per paragraph : {' '.join(ps).count('. ') / len(ps):.2f}\n")
@@ -58,13 +63,46 @@ class Document(TextIO):
             idfs = [{k: idf_inverse_cdf(v) for k, v in idfs.items()}] * len(ps)
             ## calculate tfidf
             tfidfs = [{k: tf[k] * idf[k] for k in tf.keys()} for tf, idf in zip(tfs, idfs)]
+
+            ## Extract keywords
             tfidfs = [{k: int(100 * tfidf[k]) for k in sorted(tfidf.keys(), key=tfidf.get, reverse=True)[:n] if
                        tfidf[k] > 0.01} for tfidf in tfidfs]
-            if False:
+            candidates = set(sum([list(tfidf.keys()) for tfidf in tfidfs], []))
+            # Note: setdefault modifies dict
+            tfidf_max = {x: max([tfidf.setdefault(x, 0) for tfidf in tfidfs]) for x in candidates}
+            tfidf_count = {x: sum([(tfidf.setdefault(x, 0) > 0) for tfidf in tfidfs]) for x in candidates}
+            tfidf_mean = {x: int(sum([tfidf.setdefault(x, 0) for tfidf in tfidfs]) / len(tfidfs)) for x in candidates}
+            tfidf_max_mean = {x: int(100 * tfidf_mean[x] / (1 + tfidf_count[x])) for x in candidates}
+
+            print(dict(sorted(tfidf_max.items(), key=lambda item: item[1], reverse=True)))
+            print(dict(sorted(tfidf_count.items(), key=lambda item: item[1], reverse=True)))
+            print(dict(sorted(tfidf_mean.items(), key=lambda item: item[1], reverse=True)))
+            print(dict(sorted(tfidf_max_mean.items(), key=lambda item: item[1], reverse=True)))
+            # candidates = {x:candidates.count(x) for x in set(candidates)}
+            # print((sorted(candidates.keys(), key=candidates.get, reverse=True)))
+
+            if True:
                 import matplotlib.pyplot as plt
                 import pandas as pd
-                print(tf[1])
-                pd.Series(tf[1]).hist(bins=100)
+                assert len(ps_idx) == len(tfidfs)
+
+                # pd.DataFrame({
+                #     "idx": [idx[3] for idx in ps_idx],
+                #     "tfidf": [tfidf['시민'] for tfidf in tfidfs]}).query('tfidf != 0').plot.scatter(x="idx", y="tfidf", style='.')
+                # plt.show()
+                pd.DataFrame({
+                    "idx": [idx[3] for idx in ps_idx],
+                    "tfidf": [tfidf['디오'] for tfidf in tfidfs]}).query('tfidf != 0').plot.scatter(x="idx", y="tfidf", style='.')
+                plt.xlim([0, max([idx[3] for idx in ps_idx])])
+                plt.show()
+                # pd.DataFrame({
+                #     "idx": [idx[3] for idx in ps_idx],
+                #     "tfidf": [tfidf['디오'] for tfidf in tfidfs]}).query('tfidf != 0').set_index('idx').plot.kde()
+                # plt.show()
+                pdf = zip([idx[3] for idx in ps_idx], [tfidf['디오'] for tfidf in tfidfs])
+                samples = sum([[x]*p for x,p in pdf],[])
+                pd.Series(samples).plot.kde()
+                plt.xlim([0, max([idx[3] for idx in ps_idx])])
                 plt.show()
             yield tfidfs
 
