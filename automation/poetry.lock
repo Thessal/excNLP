@@ -397,6 +397,7 @@ tflite-runtime = "2.5.0"
 [package.source]
 type = "url"
 url = "https://github.com/google-coral/pycoral/releases/download/release-frogfish/pycoral-1.0.0-cp38-cp38-macosx_10_15_x86_64.whl"
+
 [[package]]
 name = "pyparsing"
 version = "2.4.7"
@@ -681,7 +682,7 @@ python-versions = "*"
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.8"
-content-hash = "0bb9c83137262aeadba14b2b9d87c5f2b58fc5007251ea7aab824d33832dce6f"
+content-hash = "ad8179716af22de198a1532e96ea5cb09aa4eb6414e01ab982d490cc147866a2"
 
 [metadata.files]
 absl-py = [

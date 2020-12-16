@@ -29,12 +29,32 @@ for res in doc.tfidf(n=15):
     # TODO : Kernel density estimation & segmentation -> semantic paragraphing
     # TODO : coreference resolution
 
-# i = 100
-# for x in doc.generate(unit="paragraph", detail=True):
-#     # print(list(x[0]))
-#     print(list(x))
+# i = 1
+# for x in doc.generate(unit="paragraphs", detail=True):
+#     print(x["begin"],x["end"])
+#     print(x["element"][0])
+#     print(x["element"][1])
 #     i -= 1
 #     if i<0 : break
+# print("===")
+# i = 10
+# for x in doc.generate(unit="sentences", detail=True):
+#     print(x)
+#     i -= 1
+#     if i<0 : break
+# print("===")
+# i = 10
+# for x in doc.generate(unit="words", detail=True):
+#     print(x)
+#     i -= 1
+#     if i<0 : break
+# print("===")
+# i = 10
+# for x in doc.generate(unit="word", detail=True):
+#     print(x)
+#     i -= 1
+#     if i<0 : break
+
 
 # #
 # # Document Model

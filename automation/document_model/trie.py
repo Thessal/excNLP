@@ -104,9 +104,13 @@ class Trie(object):
         # Sort the results in reverse order and return
         return sorted(self.output, key=lambda x: x[1], reverse=True)
 
+    def include_hangul(k):
+        return any([(ord('가') <= ord(x) and ord(x) <= ord('힣')) for x in k])
+        #'힣' = '가' + 19*21*28 -1
+
     def top_n_items(self, n):
         freq = {self.assemble(w[0]): w[1] for w in self.query('')}
-        freq = {k: v for k, v in freq.items() if len(k) > 1}
+        freq = {k: v for k, v in freq.items() if (len(k) > 1) and self.include_hangul.__func__(k)}
         top_words = sorted(freq.keys(), key=freq.get, reverse=True)[:min(n, len(freq))]
         return {w: freq[w] for w in top_words}
 

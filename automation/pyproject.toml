@@ -14,6 +14,7 @@ pandas = "^1.1.5"
 matplotlib = "^3.3.3"
 tflite-runtime = {url = "https://github.com/google-coral/pycoral/releases/download/release-frogfish/tflite_runtime-2.5.0-cp38-cp38-macosx_10_15_x86_64.whl"}
 pycoral = {url = "https://github.com/google-coral/pycoral/releases/download/release-frogfish/pycoral-1.0.0-cp38-cp38-macosx_10_15_x86_64.whl"}
+scipy = "^1.5.4"
 
 [tool.poetry.dev-dependencies]
 
