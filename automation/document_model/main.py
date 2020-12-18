@@ -105,7 +105,7 @@ class Document(TextIO):
                 df = pd.DataFrame(dict(zip(keywords, kdes)), index=x_grid)
                 ## Keyword selection from maximum probability
                 keywords = df.max(axis=0).nlargest(n_topic_segmentation).index
-                df[keywords].plot()
+                df[keywords[:min(n_topic_segmentation,n_topic_visualization)]].plot()
                 plt.legend(prop={"family": "AppleGothic"})
                 plt.show()
 
@@ -138,7 +138,7 @@ class Document(TextIO):
 
                 for i in range(len(segments)):
                     for j in range(n_topic_visualization):
-                        plt.text(x[i], (1.0 * y + b)[j][i], t[j][i], ha='left', va='top', family="AppleGothic",
+                        plt.text((x[i]+x[i+1])*0.5, (0.5 * y + b)[j][i], t[j][i], ha='center', va='center', family="AppleGothic",
                                  bbox=dict(facecolor=(1, 1, 1, 0.5), edgecolor='None', pad=0.0))
                 # consider hash text into RB and segment index into G.
                 # text wrap
