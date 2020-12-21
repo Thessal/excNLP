@@ -1,61 +1,53 @@
 from encoder import *
 from document_model import Document
 from document_model.main import legacy_sentences_from_raw_text
+from glob import glob
 
 #
 # Parameters
 #
 print("Setup")
-path = "proprietary/text/담론과 진실.txt"
-raw_texts = [f"proprietary/text/{x}.txt" for x in ["담론과 진실"]]
-read_line_limit = 300
-silent = True
+paths = [] #glob("proprietary/text/*.txt")
 
-max_seq_len = 64
-batch_size = 32
-pooling_method = 'default'  # 'average'
+for path in paths :
+    read_line_limit = None #300
+    doc = Document(path, limit=read_line_limit)
+    for res in doc.tfidf(n=15):
+        #print(res)
+        for x in res:
+            #print(list(x.keys()))
+            pass
+        #break
+# FIXME : multiple file handling (fix doc.documents in doc.tfidf rather than glob in test.py)
+# TODO : coreference resolution
+# TODO : save document model to file
 
-summary_ratio = 0.03  # 0.1
-summary_lines_override = None  # 100
-
-doc = Document(path, limit=read_line_limit)
-
-for res in doc.tfidf(n=15):
-    #print(res)
-    for x in res:
-        #print(list(x.keys()))
-        pass
-    break
-    # TODO : Kernel density estimation & segmentation -> semantic paragraphing
-    # TODO : coreference resolution
-
-# i = 1
-# for x in doc.generate(unit="paragraphs", detail=True):
-#     print(x["begin"],x["end"])
-#     print(x["element"][0])
-#     print(x["element"][1])
-#     i -= 1
-#     if i<0 : break
-# print("===")
-# i = 10
-# for x in doc.generate(unit="sentences", detail=True):
-#     print(x)
-#     i -= 1
-#     if i<0 : break
-# print("===")
-# i = 10
-# for x in doc.generate(unit="words", detail=True):
-#     print(x)
-#     i -= 1
-#     if i<0 : break
-# print("===")
-# i = 10
-# for x in doc.generate(unit="word", detail=True):
-#     print(x)
-#     i -= 1
-#     if i<0 : break
+#
+# NER Train
+#
+print("Dataset load")
+from tool import dataset
+# dataset.generate_KMOU()
+# dataset.generate_CNU()
+# dataset.generate_NAVER()
+dfs1 = dataset.load_KMOU()
+dfs2 = dataset.load_CNU()
+dfs3 = dataset.load_NAVER()
 
 
+#
+#
+#
+
+# raw_texts = [f"proprietary/text/{x}.txt" for x in ["담론과 진실"]]
+# silent = True
+#
+# max_seq_len = 64
+# batch_size = 32
+# pooling_method = 'default'  # 'average'
+#
+# summary_ratio = 0.03  # 0.1
+# summary_lines_override = None  # 100
 # #
 # # Document Model
 # #
