@@ -7,37 +7,44 @@ from glob import glob
 # Parameters
 #
 print("Setup")
-paths = [] #glob("proprietary/text/*.txt")
+paths = glob("proprietary/data/TEXT/Raw/EBOOK/*.txt")
+path = [paths[0]]
+read_line_limit = None #300
+doc = Document(path[0], limit=read_line_limit)
 
-for path in paths :
-    read_line_limit = None #300
-    doc = Document(path, limit=read_line_limit)
-    for res in doc.tfidf(n=15):
-        #print(res)
-        for x in res:
-            #print(list(x.keys()))
-            pass
-        #break
+#
+# Document Model (Segmentation)
+#
+print("BOW")
+for x in doc.trie():
+    search = {w[0]: w[1] for w in x.query('승')}
+    print(search)
+    print(x.top_n_items(30))
+    break
+
+print("Document Model")
+for res in doc.tfidf(n=15):
+    for x in res:
+        #print(list(x.keys()))
+        pass
+    break
+
 # FIXME : multiple file handling (fix doc.documents in doc.tfidf rather than glob in test.py)
 # TODO : coreference resolution
 # TODO : save document model to file
 
-#
-# NER Train
-#
-print("Dataset load")
-from tool import dataset
-# dataset.generate_KMOU()
-# dataset.generate_CNU()
-# dataset.generate_NAVER()
-dfs1 = dataset.load_KMOU()
-dfs2 = dataset.load_CNU()
-dfs3 = dataset.load_NAVER()
+# #
+# # NER Train
+# #
+# print("Dataset load")
+# from tool import dataset
+# # dataset.generate_KMOU()
+# # dataset.generate_CNU()
+# # dataset.generate_NAVER()
+# dfs1 = dataset.load_KMOU()
+# dfs2 = dataset.load_CNU()
+# dfs3 = dataset.load_NAVER()
 
-
-#
-#
-#
 
 # raw_texts = [f"proprietary/text/{x}.txt" for x in ["담론과 진실"]]
 # silent = True
@@ -48,24 +55,7 @@ dfs3 = dataset.load_NAVER()
 #
 # summary_ratio = 0.03  # 0.1
 # summary_lines_override = None  # 100
-# #
-# # Document Model
-# #
-# print("Document Model")
-# for x in doc.trie():
-#     search = {w[0]: w[1] for w in x.query('승')}
-#     print(x.top_n_items(30))
-#     break
 #
-# #
-# # TF-IDF
-# #
-# #doc = Document(path, limit=read_line_limit)
-# for res in doc.tfidf():
-#     print(res)
-#     break
-#     # TODO : Kernel density estimation & segmentation -> semantic paragraphing
-#     # TODO : coreference resolution
 #
 # #
 # # Document Model (legacy)

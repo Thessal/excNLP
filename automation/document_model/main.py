@@ -58,8 +58,14 @@ class Document(TextIO):
             idf_inverse_cdf = lambda y: -np.log(y)  # lambda y: np.log((1-y)/y)
             ## Count
             bow_size = int(np.sqrt(n * len(ps)))
-            bow = {w: self.explode(w) for w in Trie(' '.join(ps).split(' ')).top_n_items(n=bow_size).keys()}
-            ps = [self.explode(p) for p in ps]
+            subword = False # We need a better candidate heuristic to enable this.
+            if subword:
+                bow = {w: self.explode(w) for w in Trie(' '.join(ps).split(' ')).top_n_items(n=bow_size).keys()}
+                #ps = [' '.join([self.explode(w) for w in p.split(' ')]) for p in ps]
+                ps = [self.explode(p) for p in ps]
+                print(bow)
+            else :
+                bow = {w: w for w in Trie(' '.join(ps).split(' '), auto_explode=False).top_n_items(n=bow_size).keys()}
             tfs = [{w: p.count(e) for w, e in bow.items()} for p in ps]
             idfs = {w: sum([(e in p) for p in ps]) for w, e in bow.items()}
             ## normalize & transform

@@ -1,0 +1,59 @@
+## List
+
+find . -print0 | while read -d $'\0' file
+do
+  if [[ $(file -I $file) != *"utf-8" ]] && [[ $file == *".txt" ]] ; then
+    echo "$file"
+  fi ;
+done
+
+
+
+
+## Convert (iconv -c -s : silently discard)
+
+find . -print0 | while read -d $'\0' file
+do
+  if [[ $(file -I $file) != *"utf-8" ]] && [[ $file == *".txt" ]] ; then
+    iconv -f CP949 -t UTF-8 -c -s $file > $file.utf8;
+    if [ $? -eq 0 ]; then
+     mv $file $file.cp949;
+     mv $file.utf8 $file;
+    fi ;
+  fi ;
+done
+
+
+for file in *.txt.utf8;
+do
+  echo $file
+  echo "================= UPDATE ===============";
+  head $file;
+  echo "========================================";
+  echo;
+  echo "=================  KEEP  ===============";
+  head ${file%*.utf8};
+  echo "========================================";
+  echo
+  while true; do
+   echo "Update/Keep/Delete u/k/d"
+   read yn
+   case $yn in
+         [Uu]* ) mv $file ${file%*.utf8}; break;;
+         [Kk]* ) rm $file; break;;
+         [Dd]* ) rm $file; rm ${file%*.utf8}; break;;
+         * ) echo "Please answer yes or no.";;
+   esac;
+  done
+done;
+
+
+
+## Revert
+
+find . -print0 | while read -d $'\0' file
+do
+  if [[ $file == *".cp949" ]] ; then
+    mv $file ${file%*.cp949}
+  fi ;
+done

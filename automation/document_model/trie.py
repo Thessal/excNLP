@@ -25,21 +25,22 @@ class Trie(object):
     from .explode import explode as _explode
     """The trie object"""
 
-    def __init__(self, list_words=[], raw=False):
+    def __init__(self, list_words=[], auto_explode=True):
         """
         The trie has at least the root node.
         The root node does not store any character
         """
         self.root = TrieNode("")
         self.output = []
-        self.assemble = self._assemble if raw else lambda x: x
-        self.explode = self._explode if raw else lambda x: x
+        self.assemble = self._assemble if auto_explode else lambda x: x
+        self.explode = self._explode if auto_explode else lambda x: x
         for w in (w for w in list_words):
             self.insert(w)
 
     def insert(self, word):
         """Insert a word into the trie"""
         word = self.explode(word)
+        if len(word)>30 : return
         node = self.root
 
         # Loop through each character in the word
@@ -72,6 +73,7 @@ class Trie(object):
         if include_subword:
             if node.is_end or len(node.children) > 2:
                 self.output.append((self.assemble(prefix + node.char), node.counter_recursive))
+
         else:
             if node.is_end:
                 self.output.append((self.assemble(prefix + node.char), node.counter))
@@ -105,11 +107,12 @@ class Trie(object):
         return sorted(self.output, key=lambda x: x[1], reverse=True)
 
     def include_hangul(k):
-        return any([(ord('가') <= ord(x) and ord(x) <= ord('힣')) for x in k])
+        return any([(ord('가') <= ord(x) <= ord('힣')) for x in k])
+        # 자음 모음 : (12593 <= ord(x) <= 12686)
         #'힣' = '가' + 19*21*28 -1
 
     def top_n_items(self, n):
-        freq = {self.assemble(w[0]): w[1] for w in self.query('')}
+        freq = {w[0]: w[1] for w in self.query('')}
         freq = {k: v for k, v in freq.items() if (len(k) > 1) and self.include_hangul.__func__(k)}
         top_words = sorted(freq.keys(), key=freq.get, reverse=True)[:min(n, len(freq))]
         return {w: freq[w] for w in top_words}

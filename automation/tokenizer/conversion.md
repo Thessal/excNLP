@@ -2,7 +2,14 @@
 
 수 관형사, 분석불능 태그는 실제로 어떻게 작동하는지 테스트 필요함.
 
-| 분류 | 꼬꼬마 단일 태그 | TTAK.KO-11.0010/R1 (세종 품사 태그 유) |
+```
+KorBert
+grep "MMA" vocab.korean_morp.list -> empty
+grep "MM" vocab.korean_morp.list -> Contains MMA, MMD, MMN, tagged as MM
+Maybe there's postprocessing
+```
+
+| 분류 | 꼬꼬마 단일 태그 | TTAK.KO-11.0010/R1 (세종 품사 태그 유사) |
 |---|---|---|
 | 체언(N) | NNG	보통 명사 | 일반명사(NNG) |
 |  | NNP	고유 명사 | 고유명사(NNP) |
@@ -14,8 +21,8 @@
 |  | VXV, VXA, VX	보조 동사, 보조 형용사 | 보조용언(VX) |
 |  | VCP	긍정 지정사, 서술격 조사 '이다' | 긍정지정사(VCP) |
 |  | VCN	부정 지정사, 형용사 '아니다' | 부정지정사(VCN) |
-| 관형사(M) | MDT	일반 관형사 | 관형사(MM), 성상 관형사(MMA), 지시 관형사(MMD), 수 관형사(MMN) |
-|  | MDN	수 관형사 | | 
+| 관형사(M) | MDT	일반 관형사 | 성상 관형사(MMA), (지시 관형사(MMD), (관형사(MM)) |
+|  | MDN	수 관형사 | 수 관형사(MMN) | 
 | 부사 | MAG	일반 부사 | 일반부사(MAG) |
 |  | MAC	접속 부사 | 접속부사(MAJ) |
 | 감탄사(I) | IC	감탄사 | 감탄사(IC) |
