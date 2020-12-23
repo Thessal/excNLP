@@ -9,7 +9,7 @@ from glob import glob
 print("Setup")
 paths = glob("proprietary/data/TEXT/Raw/EBOOK/*.txt")
 path = [paths[0]]
-read_line_limit = None #300
+read_line_limit = None  # 300
 doc = Document(path[0], limit=read_line_limit)
 
 #
@@ -25,7 +25,7 @@ for x in doc.trie():
 print("Document Model")
 for res in doc.tfidf(n=15):
     for x in res:
-        #print(list(x.keys()))
+        # print(list(x.keys()))
         pass
     break
 

@@ -37,8 +37,12 @@ class Trie(object):
         for w in (w for w in list_words):
             self.insert(w)
 
-    def insert(self, word):
-        """Insert a word into the trie"""
+    def insert(self, word, count=1):
+        """
+        Insert a word into the trie
+        :param word: word to add
+        :param count: add count times
+        """
         word = self.explode(word)
         if len(word)>30 : return
         node = self.root
@@ -54,29 +58,38 @@ class Trie(object):
                 new_node = TrieNode(char)
                 node.children[char] = new_node
                 node = new_node
-            node.counter_recursive += 1
+            node.counter_recursive += count
 
         # Mark the end of a word
         node.is_end = True
 
         # Increment the counter to indicate that we see this word once more
-        node.counter += 1
+        node.counter += count
 
-    def dfs(self, node, prefix, include_subword=True):
+    def validate(self):
+        """
+        Validate counter and counter_recursive
+        :return:
+        """
+        raise NotImplementedError
+
+    def dfs(self, node, prefix, include_subword=True, count_recursive=True):
         """Depth-first traversal of the trie
 
         Args:
             - node: the node to start with
             - prefix: the current prefix, for tracing a
                 word while traversing the trie
+            - include_subword : if false, only return leaves. if true,
+                 popular subword nodes are also returned (childeren>=3)
+            - count_recursive : if true, count self and child recursively
         """
-        if include_subword:
-            if node.is_end or len(node.children) > 2:
-                self.output.append((self.assemble(prefix + node.char), node.counter_recursive))
-
-        else:
-            if node.is_end:
-                self.output.append((self.assemble(prefix + node.char), node.counter))
+        # NOTE : unpopular nodes are always truncated...
+        if node.is_end or (include_subword and (len(node.children) > 2)):
+            self.output.append((
+                self.assemble(prefix + node.char),
+                (node.counter_recursive if count_recursive else node.counter)
+            ))
 
         for child in node.children.values():
             self.dfs(child, prefix + node.char)
