@@ -1,37 +1,49 @@
+from constant import *
+from tokenizer import Tokenizer
 from encoder import *
 from document_model import Document
 from document_model.main import legacy_sentences_from_raw_text
-from glob import glob
 
-#
-# Parameters
-#
-print("Setup")
-paths = glob("proprietary/data/TEXT/Raw/EBOOK/*.txt")
-path = [paths[0]]
-read_line_limit = None  # 300
-doc = Document(path[0], limit=read_line_limit)
+rebuild = False
 
-#
-# Document Model (Segmentation)
-#
-print("BOW")
-for x in doc.trie():
-    search = {w[0]: w[1] for w in x.query('승')}
-    print(search)
-    print(x.top_n_items(30))
-    break
+tokenizer = Tokenizer(
+    working_dir=TOKENIZER_DIR,
+    text_files=RAW_TEXT_FILES,
+    rebuild=False,
+    postfix_sensitivity=50,
+)
+output = tokenizer.tokenize("나는 자랑스러운 태극기 앞에 자유롭고 정의로운 대한민국의 무궁한 영광을 위하여 충성을 다할 것을 굳게 다짐합니다")
+print(output)
 
-print("Document Model")
-for res in doc.tfidf(n=15):
-    for x in res:
-        # print(list(x.keys()))
-        pass
-    break
-
-# FIXME : multiple file handling (fix doc.documents in doc.tfidf rather than glob in test.py)
-# TODO : coreference resolution
-# TODO : save document model to file
+# #
+# # Parameters
+# #
+# print("Setup")
+# paths = glob("proprietary/data/TEXT/Raw/EBOOK/*.txt")
+# path = [paths[0]]
+# read_line_limit = None  # 300
+# doc = Document(path[0], limit=read_line_limit)
+#
+# #
+# # Document Model (Segmentation)
+# #
+# print("BOW")
+# for x in doc.trie():
+#     search = {w[0]: w[1] for w in x.query('승')}
+#     print(search)
+#     print(x.top_n_items(30))
+#     break
+#
+# print("Document Model")
+# for res in doc.tfidf(n=15):
+#     for x in res:
+#         # print(list(x.keys()))
+#         pass
+#     break
+#
+# # FIXME : multiple file handling (fix doc.documents in doc.tfidf rather than glob in test.py)
+# # TODO : coreference resolution
+# # TODO : save document model to file
 
 # #
 # # NER Train
