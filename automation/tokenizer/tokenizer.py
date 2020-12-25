@@ -1,6 +1,11 @@
 from document_model import Trie
 import pickle
 import numpy as np
+import sentencepiece as spm
+import os
+import tensorflow as tf  # tf.enable_eager_execution()
+import tensorflow_text as tf_text
+
 
 class Tokenizer:
     from document_model.explode import explode
@@ -25,7 +30,7 @@ class Tokenizer:
         self.count_all = self.trie.query('')[0][1]
         self.average_postfix_count = postfix_sensitivity
 
-    def _raw_words(self,files):
+    def _raw_words(self, files):
         """
         Generates words from files
         :param files: list containing txt filenames
@@ -76,13 +81,13 @@ class Tokenizer:
         """
         output = []
         for x in text.strip().split(' '):
-            x = x.replace('/','')
-            if not x : pass
+            x = x.replace('/', '')
+            if not x: pass
             x_e = self.explode(x)
 
             # Try trie query
             prefix_length_min = 3
-            queries = [x_e[:i] for i in range(prefix_length_min,len(x_e)+1)]
+            queries = [x_e[:i] for i in range(prefix_length_min, len(x_e) + 1)]
             # print(x)
             # print(queries)
             match = [self.trie.query(self.assemble(x)) for x in queries]
@@ -90,15 +95,149 @@ class Tokenizer:
             match = [x for x in match if x]
             tf = [x[0][1] / self.count_all for x in match]
             # print(tf)
-            idf = [-np.log(len(x)/self.average_postfix_count) for x in match]
+            idf = [-np.log(len(x) / self.average_postfix_count) for x in match]
             # print(idf)
-            tfidf = [x[0]*x[1] for x in zip(tf,idf)]
+            tfidf = [x[0] * x[1] for x in zip(tf, idf)]
             # print(tfidf)
-            prefix_length = prefix_length_min+np.argmax(tfidf) if tfidf else len(x_e)
+            prefix_length = prefix_length_min + np.argmax(tfidf) if tfidf else len(x_e)
             # print(prefix_length)
             # print(x_e[:prefix_length])
             # print(x_e[prefix_length:])
             prefix, postfix = self.assemble(x_e[:prefix_length]), self.assemble(x_e[prefix_length:])
-            if prefix : output.append(prefix)
-            if postfix : output.append(postfix)
+            if prefix: output.append(prefix)
+            if postfix: output.append(postfix)
         return output
+
+
+# https://github.com/tensorflow/text/blob/master/docs/api_docs/python/text
+class TokenizerSpm:
+    from document_model.explode import explode
+    from document_model.explode import assemble
+    def __init__(self, wd, train_args=None):
+        """
+        :param files: list containing txt filenames
+        :param wd: working directory
+        :param files: (optional) text files for train
+        """
+        self.wd = wd
+        self.model_prefix = os.path.join(wd, "sentencepiece")
+        if train_args:
+            self.files = train_args['files']
+            self.character_coverage = train_args['character_coverage']
+            self.vocab_size = train_args['vocab_size']
+        self.sp = None
+        self.exhausted = False
+
+    @staticmethod
+    def sbd(text, sentence_length_min=20):  # sentence boundary disambiguation
+        ses = ['. ', '? ']  # sentence ending suffixes
+        sep = [0] + [cur + 1 for cur in range(len(text) - 1) if (text[cur:cur + 2] in ses)] + [len(text)]
+        sen = [text[i[0]:i[1]].strip() for i in zip(sep[:-1], sep[1:])]
+        for i in range(len(sen) - 1):
+            if len(sen[i]) < sentence_length_min:
+                sen[i + 1] = sen[i] + ' ' + sen[i + 1]
+                sen[i] = ''
+        if len(sen) > 1:
+            if len(sen[-1]) < sentence_length_min:
+                sen[-2] = sen[-2] + ' ' + sen[-1]
+                sen[-1] = ''
+        sen = [x for x in sen if x]
+        return sen
+
+    def _raw_lines(self):
+        """
+        Generates sentences from files
+        :return: word generator
+        """
+        self.exhausted = False
+        i = 0
+        for file in self.files:
+            i = i + 1
+            print(f"Reading file {i} out of {len(self.files)}")
+            with open(file, "r", encoding="utf-8") as fp:
+                for line in fp.readlines():
+                    for sent in self.sbd(line):
+                        yield self.explode(sent)
+        self.exhausted = True
+        print(f"{len(self.files)} files processed.")
+
+    def train(self, delete_previous_file=False, chunksize=1000):
+        if delete_previous_file:
+            if input(f"Delete {self.model_prefix}.[model,vocab]? [y/n]") == 'y':
+                try:
+                    os.remove(self.model_prefix + '.model')
+                    os.remove(self.model_prefix + '.vocab')
+                except OSError:
+                    print("Failed to delete.")
+        # print(f"Total {len(self.files)} files.")
+        # for i in range(0, len(self.files), chunksize):
+        #     lines = self._raw_lines(self.files[i:i + chunksize])
+        #     spm.SentencePieceTrainer.Train(sentence_iterator=lines, model_prefix=self.model_prefix,
+        #                                    character_coverage=self.character_coverage, vocab_size=self.vocab_size)
+
+        # for i in range(0, len(self.files), chunksize):
+        #     lines = self._raw_lines(self.files[i:i + chunksize])
+        lines = self._raw_lines()
+        while not self.exhausted:
+            spm.SentencePieceTrainer.Train(sentence_iterator=lines, model_prefix=self.model_prefix,
+                                           character_coverage=self.character_coverage, vocab_size=self.vocab_size,
+                                           input_sentence_size=chunksize, shuffle_input_sentence=False)
+        # How to specify alphabet size...?
+        # --input: one-sentence-per-line raw corpus file. No need to run tokenizer, normalizer or preprocessor. By default, SentencePiece normalizes the input with Unicode NFKC. You can pass a comma-separated list of files.
+        # --model_prefix: output model name prefix. <model_name>.model and <model_name>.vocab are generated.
+        # --vocab_size: vocabulary size, e.g., 8000, 16000, or 32000
+        # --character_coverage: amount of characters covered by the model, good defaults are: 0.9995 for languages with rich character set like Japanse or Chinese and 1.0 for other languages with small character set.
+        # --model_type: model type. Choose from unigram (default), bpe, char, or word. The input sentence must be pretokenized when using word type.
+        #
+        # trainer_interface.cc(112) LOG(WARNING) Too many sentences are loaded! (45581210), which may slow down training.
+        # trainer_interface.cc(114) LOG(WARNING) Consider using --input_sentence_size=<size> and --shuffle_input_sentence=true.
+        # trainer_interface.cc(117) LOG(WARNING) They allow to randomly sample <size> sentences from the entire corpus.
+        # --input_sentence_size: The number of lines spm_train first loads. Remaining lines are simply discarded. Since spm_train loads entire corpus into memory, this size will depend on the memory size of the machine. It also affects training time.
+        # --training_sentence_size: The number of lines to train BPE/unigram model.
+        # --mining_sentence_size: The number of lines to generate seed pieces. spm_train extracts frequent substring from the corpus with suffix array, which requires O(10N) memory space. This setting is valid when --model_type=unigram.
+        # --seed_sentencepiece_size: The size of seed pieces. This setting is valid when --model_type=unigram.
+        # In general, we can use the default values except for --input_sentence_size. Training spm with more than 10M sentences requires tons of memory and CPU resources.
+        #
+        # spm_train loads all files/sentences by default
+        # --input_sentence_size=N lets spm_train load randomly shuffled N lines.
+        # --shuffle_input_sentence=false loads first N lines instead.
+        # --mining_sentence_size and --training_sentence_size are deprecated.
+        try:
+            self.sp = self.load(enable_tf=False)
+        except:
+            print("Warning : Failed to load model")
+
+    def load(self, enable_tf):
+        if enable_tf:
+            # TF
+            # model = open(f"{MODEL_PREFIX}.model", "rb").read()
+            # text.SentencepieceTokenizer(
+            #     model=None, out_type=dtypes.int32, nbest_size=0, alpha=1.0, reverse=False,
+            #     add_bos=False, add_eos=False, name=None
+            # )
+            # tensorflow_sp_out_int = text.SentencepieceTokenizer(model=model)
+            # tensorflow_sp_out_str = text.SentencepieceTokenizer(model=model, out_type=tf.string)
+            # print(tensorflow_sp_out_str.tokenize(["토크나이저 테스트"]))
+            # print(tensorflow_sp_out_int.tokenize(["토크나이저 테스트"]))
+            #
+            # print(tensorflow_sp_out_str.tokenize(["토크나이저 테스트"]))
+            raise NotImplementedError
+        else:
+            # Non-TF
+            return spm.SentencePieceProcessor(model_file=self.model_prefix + '.model')
+            # >> > sp.encode(['This is a test', 'Hello world'], out_type=int)
+            # [[284, 47, 11, 4, 15, 400], [151, 88, 21, 887]]
+            # >> > sp.encode('This is a test', out_type=str)
+            # ['▁This', '▁is', '▁a', '▁', 't', 'est']
+            # >> > sp.encode(['This is a test', 'Hello world'], out_type=str)
+
+
+    def tokenize(self, text, debug=True):
+        print(text)
+        text = [self.explode(x) for x in text]
+        if debug:
+            #print(self.sp.encode(text, out_type=str)) # TODO : prevent sentencepiece automatic assemble
+            output = [[(' ' if ord(t[0])==9601 else '/') + self.assemble(self.explode(t, allow_nonunique_assemble=True)) for t in x] for x in
+                   self.sp.encode(text, out_type=str)]
+            print('\n'.join([''.join(x) for x in output]))
+        return self.sp.encode(text, out_type=int)
