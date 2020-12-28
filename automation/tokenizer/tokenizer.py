@@ -203,7 +203,7 @@ class TokenizerSpm:
         # --shuffle_input_sentence=false loads first N lines instead.
         # --mining_sentence_size and --training_sentence_size are deprecated.
         try:
-            self.sp = self.load(enable_tf=False)
+            self.load(enable_tf=False)
         except:
             print("Warning : Failed to load model")
 
@@ -224,20 +224,21 @@ class TokenizerSpm:
             raise NotImplementedError
         else:
             # Non-TF
-            return spm.SentencePieceProcessor(model_file=self.model_prefix + '.model')
+            self.sp = spm.SentencePieceProcessor(model_file=self.model_prefix + '.model')
             # >> > sp.encode(['This is a test', 'Hello world'], out_type=int)
             # [[284, 47, 11, 4, 15, 400], [151, 88, 21, 887]]
             # >> > sp.encode('This is a test', out_type=str)
             # ['▁This', '▁is', '▁a', '▁', 't', 'est']
             # >> > sp.encode(['This is a test', 'Hello world'], out_type=str)
 
-
     def tokenize(self, text, debug=True):
         print(text)
         text = [self.explode(x) for x in text]
         if debug:
-            #print(self.sp.encode(text, out_type=str)) # TODO : prevent sentencepiece automatic assemble
-            output = [[(' ' if ord(t[0])==9601 else '/') + self.assemble(self.explode(t, allow_nonunique_assemble=True)) for t in x] for x in
-                   self.sp.encode(text, out_type=str)]
+            # print(self.sp.encode(text, out_type=str)) # TODO : prevent sentencepiece automatic assemble
+            output = [
+                [(' ' if ord(t[0]) == 9601 else '/') + self.assemble(self.explode(t, allow_nonunique_assemble=True)) for
+                 t in x] for x in
+                self.sp.encode(text, out_type=str)]
             print('\n'.join([''.join(x) for x in output]))
         return self.sp.encode(text, out_type=int)
