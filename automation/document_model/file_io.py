@@ -81,6 +81,7 @@ class TextIO:
 
         is_valid = (stat['segment_size_avg'] < 2000) # segmentation result is valid
         if not is_valid:
+            # What if we do it using TF-IDF
             print(f"Paragraph too large ({stat['segment_size_avg']})")
             N = 10
             lines = [y for x in [lines[i*N:i*N+N]+[''] for i in range(int(len(lines)/N))] for y in x]

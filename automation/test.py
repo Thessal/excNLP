@@ -27,11 +27,11 @@ rebuild = False
 # tokenizer.tokenize(["아이~씻팔!!!", "초능력 맛 좀 볼래?", "좆같은도마뱀새끼", "경찰에 신고하거나 하면 희동이 호로자식 되는거야 알지? 처신 잘하라고", "어이 둘리.", "도우너 어서오고.", "아침부터 왜 이렇게 죽상이야.", "고길동이 꼴받게 하잖아 씨팔 젓밥새끼가", "ㅋㅋ", "떨 한 대 할래?", "좋지. 한 대 말아줘", "응? 콜록 콜록 아이고 이게 무슨 냄새야", "둘리!!! 집 안에서는 담배피지 말라고 했잖아!! 희동이도 있는데!!"])
 
 embedder = BertModel()
-files_in = ['proprietary/data/TEXT/Raw/EBOOK/공정하다는 착각.txt']
-files_out = ['proprietary/data/EMBED/BERT/EBOOK/공정하다는 착각.txt']
-vocab_file = 'proprietary/data/POS/sentencepiece.vocab'
 rebuild = True
 if rebuild:
+    files_in = RAW_TEXT_FILES
+    files_out = [x.replace("/TEXT/Raw/", "/EMBED/BERT/") for x in RAW_TEXT_FILES]
+    vocab_file = 'proprietary/data/POS/sentencepiece.vocab'
     embedder.create_pretraining_data(files_in, files_out, vocab_file) # NOTE : Need to apply our tokenizer
 rebuild = False
 

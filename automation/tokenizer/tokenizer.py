@@ -224,15 +224,35 @@ class TokenizerSpm:
             raise NotImplementedError
         else:
             # Non-TF
-            self.sp = spm.SentencePieceProcessor(model_file=self.model_prefix + '.model')
+            self.sp = spm.SentencePieceProcessor(
+                model_file=self.model_prefix + '.model',
+                model_proto=None,
+                out_type=int,
+                add_bos=False,
+                add_eos=False,
+                reverse=False,
+                enable_sampling=False,
+                nbest_size=-1,
+                alpha=0.1
+            )
             # >> > sp.encode(['This is a test', 'Hello world'], out_type=int)
             # [[284, 47, 11, 4, 15, 400], [151, 88, 21, 887]]
             # >> > sp.encode('This is a test', out_type=str)
             # ['▁This', '▁is', '▁a', '▁', 't', 'est']
             # >> > sp.encode(['This is a test', 'Hello world'], out_type=str)
 
-    def tokenize(self, text, debug=True):
-        print(text)
+
+    def tokenize(self, text, debug=False, out_type=str, mark_unk=True):
+        """
+
+        :param text:
+        :param debug:
+        :param out_type: str or int
+        :param mark_unk: replace original token to UNK
+        :return:
+        """
+        if isinstance(text, str) :
+            text = [text]
         text = [self.explode(x) for x in text]
         if debug:
             # print(self.sp.encode(text, out_type=str)) # TODO : prevent sentencepiece automatic assemble
@@ -241,4 +261,9 @@ class TokenizerSpm:
                  t in x] for x in
                 self.sp.encode(text, out_type=str)]
             print('\n'.join([''.join(x) for x in output]))
-        return self.sp.encode(text, out_type=int)
+
+        if out_type==str and mark_unk :
+            output = [[self.sp.IdToPiece(y) for y in x] for x in self.sp.encode(text, out_type=int)]
+        else:
+            output = self.sp.encode(text, out_type=out_type)
+        return output[0] if len(output)==1 else output
