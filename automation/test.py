@@ -28,9 +28,11 @@ rebuild = False
 # tokenizer.tokenize(["아이~씻팔!!!", "초능력 맛 좀 볼래?", "좆같은도마뱀새끼", "경찰에 신고하거나 하면 희동이 호로자식 되는거야 알지? 처신 잘하라고", "어이 둘리.", "도우너 어서오고.", "아침부터 왜 이렇게 죽상이야.", "고길동이 꼴받게 하잖아 씨팔 젓밥새끼가", "ㅋㅋ", "떨 한 대 할래?", "좋지. 한 대 말아줘", "응? 콜록 콜록 아이고 이게 무슨 냄새야", "둘리!!! 집 안에서는 담배피지 말라고 했잖아!! 희동이도 있는데!!"])
 
 import os
+import json
 embedder = BertModel()
 rebuild=True
 if rebuild:
+    # Prepare data. 355 files are ignored
     files_in = RAW_TEXT_FILES
     files_out = [x.replace("/TEXT/Raw/", "/EMBED/BERT/") for x in RAW_TEXT_FILES]
     unprocessed = [i for i,file in enumerate(files_out) if not os.path.isfile(file)]
@@ -38,7 +40,16 @@ if rebuild:
     files_out = [files_out[i] for i in unprocessed]
     print(f"Processing : {len(files_out)} / {len(RAW_TEXT_FILES)}")
     vocab_file = 'proprietary/data/POS/sentencepiece.vocab'
-    embedder.create_pretraining_data(files_in, files_out, vocab_file, pool_size=7)
+    embedder.create_pretraining_data(files_in, files_out, vocab_file, converted_vocab_file=BERT_VOCAB_FILE, pool_size=7)
+    # Train
+    with open(BERT_VOCAB_FILE,"r") as f:
+        BERT_BASE_CONFIG['vocab_size'] = len(f.readlines())
+    bert_config_file = f"{BERT_MODEL_DIR}/bert_config.json"
+    with open(bert_config_file, "w") as fo:
+        json.dump(BERT_BASE_CONFIG, fo, indent=2)
+    input_files = [x.replace("/TEXT/Raw/", "/EMBED/BERT/") for x in RAW_TEXT_FILES]
+    input_files = [file for file in input_files if os.path.isfile(file)]
+    embedder.run_pretraining(bert_config_file,input_files,BERT_CHECKPOINT_DIR)
 
 # #
 # # Parameters
