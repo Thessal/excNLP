@@ -58,15 +58,16 @@ class Encoder:
         legacy_document["embeddings"] = embed_result
 
     def tokens_to_tensors(self, sentences):
-        sentences = [['[CLS]', *[x[0] + '/' + POS_convert[x[1]] + '_' for x in tokens], '[SEP]'] for tokens in
+        # sentences = [['[CLS]', *[x[0] + '/' + POS_convert[x[1]] + '_' for x in tokens], '[SEP]'] for tokens in
+        #              sentences]
+        sentences = [['[CLS]', *[x for x in tokens], '[SEP]'] for tokens in
                      sentences]
         sentences = [x[:min(len(x), self.max_seq_len) - 1] + ['[SEP]'] for x in sentences]
         sentences = [x + ['[PAD]'] * (self.max_seq_len - len(x)) for x in sentences]
         vocab = load_vocab(self.vocab_file)
         inv_vocab = {v: k for k, v in vocab.items()}
-        vocab_wrap = defaultdict(lambda: vocab['/NA_'], vocab)  # FIXME : Fallback to '/NA_'
-        sentence_vectors = [convert_tokens_to_ids(vocab_wrap, tokens) for tokens in
-                            sentences]  # TODO : Use FullTokenizer
+        vocab_wrap = defaultdict(lambda: vocab['[UNK]'], vocab)  # FIXME : Fallback to '[UNK]'
+        sentence_vectors = [convert_tokens_to_ids(vocab_wrap, tokens) for tokens in sentences]
         return sentence_vectors
 
     def load_bert(self):

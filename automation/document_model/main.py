@@ -168,14 +168,32 @@ def legacy_sentences_from_raw_text(path, limit=None, force=False):
             text = data['text']
     else:
         print("POS tagging...")
-        kkma = Kkma()
+        print("WIP")
+        # kkma = Kkma()
         from .preprocessing import legacy_preprocess
         with open(path, "r", encoding="utf-8") as reader:
             text = reader.readlines()
             if limit: text = text[0:limit]
             text = legacy_preprocess.__func__(''.join(text))
-            text = kkma.sentences(text)
-            tokens = [kkma.pos(x) for x in text]
+
+            # text = kkma.sentences(text)
+            # tokens = [kkma.pos(x) for x in text]
+            import constant
+            print("WIP")
+            from tokenizer import TokenizerSpm #FIXME : get tokenizer from args
+            print("")
+            print(constant.TOKENIZER_DIR)
+            tokenizer = TokenizerSpm(
+                constant.TOKENIZER_DIR,
+                train_args=None
+            )
+            tokenizer.load(enable_tf=False)
+            text = text.split('. ')
+            text = [x+'.' for x in text[:-1]]+[text[-1]]
+            #print(text)
+            tokens = [tokenizer.tokenize(x) for x in text]
+            #print(tokens)
+            print("Need to add < s > < /s > [UNK] [CLS] ...")
             with open(pkl_path, "wb") as f:
                 pickle.dump({'tokens': tokens, 'text': text}, f)
     return tokens, text

@@ -2,10 +2,9 @@ from glob import glob
 import random
 RAW_TEXT_FILES = glob("proprietary/data/TEXT/Raw/**/*.txt", recursive=True)
 TOKENIZER_DIR = "proprietary/data/POS/"
-TOKENIZER_DIR = "proprietary/data/POS/"
 RAW_TEXT_FILES_SHUFFLE = (RAW_TEXT_FILES*6).copy()
 random.shuffle(RAW_TEXT_FILES_SHUFFLE)
-BERT_VOCAB_FILE = "/dev/shm/temp.vocab"
+BERT_VOCAB_FILE = "proprietary/data/EMBED/BERT_MODEL/bert.vocab" #"/dev/shm/temp.vocab"
 BERT_MODEL_DIR = "proprietary/data/EMBED/BERT_MODEL"
 BERT_CHECKPOINT_DIR = "proprietary/data/EMBED/BERT_CHECKPOINT"
 I_AM_POOR = True

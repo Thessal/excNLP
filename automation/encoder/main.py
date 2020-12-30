@@ -1,5 +1,6 @@
 import os
 import sys
+import shutil
 from tokenizer import *
 from constant import *
 from document_model.file_io import TextIO
@@ -209,7 +210,8 @@ class BertModel:
         :return:
         """
         worker_id = multiprocessing.current_process().name
-        file_in_formatted = f"/dev/shm/temp{worker_id}.txt"
+        file_in_formatted = f"/dev/shm/temp_{worker_id}.txt"
+        file_out_tmp = f"/dev/shm/out_{worker_id}.tfrecord"
 
         # Convert raw text into BERT format text
         with open(file_in, "r") as fp:
@@ -222,10 +224,10 @@ class BertModel:
         try:
             os.makedirs(os.path.dirname(file_out), exist_ok=True)
             prep.FLAGS.input_file = file_in_formatted
-            prep.FLAGS.output_file = file_out
+            prep.FLAGS.output_file = file_out_tmp #file_out : Need to escape comma in filename
             prep.main(None)
             assert (prep.FLAGS.input_file == file_in_formatted)  # ¯\_(ツ)_/¯
-            assert (prep.FLAGS.output_file == file_out)
+            shutil.copy(file_out_tmp, file_out)
         except Exception as e:
             print()
             print("===Error===")
