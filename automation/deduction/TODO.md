@@ -13,10 +13,12 @@ Automatic deduction
 e.g.) 나무위키 
 나무위키는 aunhsdfqcp37ujpc.onion 이다.
 .onion은 tor이다.
-국정원 요원은 익명이다.
+요원은 익명이다.
 tor는 익명이다.
 -> ?
 ```
+
+![deduction](semantic_search.png)
 
 ### 연역규칙
 

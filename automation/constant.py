@@ -8,7 +8,8 @@ random.shuffle(RAW_TEXT_FILES_SHUFFLE)
 BERT_VOCAB_FILE = "/dev/shm/temp.vocab"
 BERT_MODEL_DIR = "proprietary/data/EMBED/BERT_MODEL"
 BERT_CHECKPOINT_DIR = "proprietary/data/EMBED/BERT_CHECKPOINT"
-BERT_BASE_CONFIG = {
+I_AM_POOR = True
+BERT_BASE_CONFIG = { # You need to delete checkpoint after changing this
     "attention_probs_dropout_prob": 0.1,
     "directionality": "bidi",
     "hidden_act": "gelu",
@@ -25,5 +26,10 @@ BERT_BASE_CONFIG = {
     "pooler_size_per_head": 128,
     "pooler_type": "first_token_transform",
     "type_vocab_size": 2,
+    # type_vocab_size = 16,
     "vocab_size": -1
 }
+
+if I_AM_POOR :
+    BERT_BASE_CONFIG["hidden_size"] = 192
+    BERT_BASE_CONFIG["pooler_fc_size"]= 192

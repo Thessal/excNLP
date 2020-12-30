@@ -29,6 +29,7 @@ tf.layers = tf.compat.v1.layers
 tf.trainable_variables = tf.compat.v1.trainable_variables
 tf.train.get_or_create_global_step = tf.compat.v1.train.get_or_create_global_step
 tf.train.polynomial_decay = tf.compat.v1.train.polynomial_decay
+tf.metrics = tf.compat.v1.metrics
 
 class Contrib(object):
     tpu = tf.compat.v1.estimator.tpu
@@ -79,6 +80,9 @@ class BertModel:
         train.FLAGS.max_predictions_per_seq = 20
         train.FLAGS.do_train = True
         train.FLAGS.do_eval = True
+        if I_AM_POOR:
+            train.FLAGS.train_batch_size = 4 #32
+            train.FLAGS.eval_batch_size = 1 #8
 
         if not train.FLAGS.do_train and not train.FLAGS.do_eval:
             raise ValueError("At least one of `do_train` or `do_eval` must be True.")
