@@ -1,11 +1,10 @@
-from .file_io import TextIO
+from document.document import TextIO
 import os
 from .trie import Trie
 
 ## Tokenizer endcoder related
 import pickle
 import glob
-from konlpy.tag import Kkma
 
 
 class Document(TextIO):
@@ -38,7 +37,7 @@ class Document(TextIO):
         for d in self.documents():
             yield Trie(d.split(' '))
 
-    from .explode import explode
+    from util.explode import explode
     def tfidf(self, n=10):
         import numpy as np
         for ps in self.generate(unit="paragraphs", detail=True):

@@ -3,7 +3,7 @@ import sys
 import shutil
 from tokenizer import *
 from constant import *
-from document_model.file_io import TextIO
+from document.document import TextIO
 import tensorflow as tf
 import multiprocessing
 import logging
