@@ -56,22 +56,6 @@ JUNGSUNG_MAP = {JUNGSUNG_LIST[i]: i for i in range(len(JUNGSUNG_LIST))}
 JONGSUNG_MAP = {JONGSUNG_LIST[i]: i for i in range(len(JONGSUNG_LIST))}
 
 
-# https://frhyme.github.io/python/python_korean_englished/
-# def korean_to_be_englished(korean_word):
-#     r_lst = []
-#     for w in list(korean_word.strip()):
-#         ## 영어인 경우 구분해서 작성함.
-#         if '가' <= w <= '힣':
-#             ## 588개 마다 초성이 바뀜.
-#             ch1 = (ord(w) - ord('가')) // 588
-#             ## 중성은 총 28가지 종류
-#             ch2 = ((ord(w) - ord('가')) - (588 * ch1)) // 28
-#             ch3 = (ord(w) - ord('가')) - (588 * ch1) - 28 * ch2
-#             r_lst.append([CHOSUNG_LIST[ch1], JUNGSUNG_LIST[ch2], JONGSUNG_LIST[ch3]])
-#         else:
-#             r_lst.append([w])
-#     return r_lst
-
 @staticmethod
 def explode(korean_word, allow_nonunique_assemble=True):
     """

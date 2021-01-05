@@ -1,7 +1,8 @@
 import pandas as pd
 
+
 class Document:
-    def __init__(self, formatter, tokenizer, detokenizer, cache=True):
+    def __init__(self, formatter, tokenizer, detokenizer, cache=True, text='', file=None):
         self.text = ['']
         self.formatter = formatter
         self.tokenizer = tokenizer
@@ -9,33 +10,40 @@ class Document:
         self._do_cache = cache
         self._cached = False
         self._data = pd.DataFrame()
+        self.exhausted = False
+        self.append(text=text, file=file)
 
     def append(self, text='', file=None):
-        if file :
+        if file:
             with open(file, 'r') as fp:
                 self.text.extend(fp.readlines())
         self.text.extend(text.split('\n'))
         self._cached = False
 
     def __iter__(self):
+        """
+        :return: sentence and token generator
+        """
         if self._do_cache and (not self._cached):
             data = ((x['begin'][0], x['begin'][1], x['begin'][2], x['text']) for x in
                     self._generate(unit="token", detail=False))
             self._data = pd.DataFrame(columns=["idx_paragraph", "idx_sentence", "idx_token", "token"], data=data)
             self._data.set_index(["idx_paragraph", "idx_sentence", "idx_token"], inplace=True)
             self._cached = True
-        if self._do_cache :
+        if self._do_cache:
             for idx, new_df in self._data.groupby("idx_sentence"):
                 tokens = new_df["token"].to_list()
-                yield {'sentence': self.detokenizer(tokens), 'tokens': tokens, 'index':new_df[0].index[0]}
-        else :
+                yield {'sentence': self.detokenizer(tokens), 'tokens': tokens, 'index': new_df[0].index[0]}
+        else:
             for sentence in self._generate(unit="tokens", detail=True):
                 tokens = [element['text'] for element in sentence['element']]
                 yield {'sentence': self.detokenizer(tokens),
                        'tokens': tokens,
-                       'index':sentence['begin']}
+                       'index': sentence['begin']}
+        yield {'sentence': '', 'tokens': [], 'index': []}
 
     def _generate(self, unit="token", detail=False):
+        self.exhausted = False
         """
         get next item and index
         :param unit: 'token','tokens','sentence','sentences','paragraph','paragraphs','document'
@@ -74,3 +82,4 @@ class Document:
                                                   'end': (idx_p, idx_s, idx_t)}
             if unit == "paragraphs_detail": idxs_p.append(idx_tmp_s)
             idx_p += 1
+        self.exhausted = True

@@ -2,7 +2,24 @@ import re
 
 
 def format(lines):
-    return _segment([_filter(line) for line in lines], debug=False)
+    paragraphs = _segment([_filter(line) for line in lines], debug=False)
+    return [[x for sentence in paragraph for x in sbd(sentence)] for paragraph in paragraphs]
+
+
+def sbd(text, sentence_length_min=20):  # sentence boundary disambiguation
+    ses = ['. ', '? ']  # sentence ending suffixes
+    sep = [0] + [cur + 1 for cur in range(len(text) - 1) if (text[cur:cur + 2] in ses)] + [len(text)]
+    sen = [text[i[0]:i[1]].strip() for i in zip(sep[:-1], sep[1:])]
+    for i in range(len(sen) - 1):
+        if len(sen[i]) < sentence_length_min:
+            sen[i + 1] = sen[i] + ' ' + sen[i + 1]
+            sen[i] = ''
+    if len(sen) > 1:
+        if len(sen[-1]) < sentence_length_min:
+            sen[-2] = sen[-2] + ' ' + sen[-1]
+            sen[-1] = ''
+    sen = [x for x in sen if x]
+    return sen
 
 
 _filter_separator = re.compile(r'^([-=#]{3}).*\1$')
