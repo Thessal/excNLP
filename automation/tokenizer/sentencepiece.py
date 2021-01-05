@@ -3,10 +3,13 @@ from document.document import Document
 import os
 from .explode import explode
 from .explode import assemble
+import collections
+from embedder.bert.tokenization import convert_to_unicode
 
 
 def initialize(model_path, train_text_files, delete_previous_file=False,
-               chunksize=1000, character_coverage=0.9995, vocab_size=200000):
+               chunksize=1000, character_coverage=0.9995, vocab_size=200000,
+               config={}):
     """
     Loads sentencepiece tokenizer. Trains if model does not exist.
     :param model_path: model directory
@@ -19,8 +22,8 @@ def initialize(model_path, train_text_files, delete_previous_file=False,
     """
 
     model_prefix = os.path.join(model_path, "sentencepiece")
-    path_model = model_prefix+".model"
-    path_vocab = model_prefix+".vocab"
+    path_model = model_prefix + ".model"
+    path_vocab = model_prefix + ".vocab"
 
     if delete_previous_file and os.path.isfile(path_vocab):
         if input(f"Delete {model_prefix}.[model,vocab]? [y/n]") == 'y':
@@ -30,7 +33,7 @@ def initialize(model_path, train_text_files, delete_previous_file=False,
             except OSError:
                 print("Failed to delete.")
 
-    if not os.path.isfile(model_prefix+".model"):
+    if not os.path.isfile(model_prefix + ".model"):
         def iterate_line_over_file(files):
             buffer = []
             for file in files:
@@ -62,23 +65,35 @@ def initialize(model_path, train_text_files, delete_previous_file=False,
             nbest_size=-1,
             alpha=0.1
         )
+        config["tokenizer_type"] = "SentencePiece"
+        config["tokenizer_data"] = sp
+        config["tokenizer_path"] = model_path
+        with open(path_vocab, "r") as fp:
+            vocab = [x.strip().split('\t') for x in fp.readlines()]
+        config["tokenizer_vocab"] = {"tokens": [x[0] for x in vocab],
+                                     "special": {
+                                         "UNKNOWN": {"idx": 0, "token": '< unk >'},
+                                         "BEGIN": {"idx": 1, "token": '< s >'},
+                                         "END": {"idx": 2, "token": '< / s >'},
+                                     }}
+        return config
     except:
         print("Warning : Failed to load model")
 
-    return sp
 
-
-def tokenize(text, sp, mark_unk=False):
+def tokenize(line, mark_unk=False, config={}):
     """
     NOTE : sentencepiece automatically assembles jamo partially
-    :param sp: SentencePieceProcessor
-    :param text: str
+    :param config: {"sp":SentencePieceProcessor}
+    :param line: str
     :param mark_unk: replace original token to UNK
     :return: {"text":[str, str, ...], "index":[int, int, ...], "dictionary":dict(str,int)}
     """
-    # raise ValueError("Tokenizer sentencepiece is not initialized")
 
-    text = explode(text)
+    text = explode(line)
+    if config["tokenizer_type"] != "SentencePiece":
+        raise ValueError("Tokenizer sentencepiece is not initialized")
+    sp = config["tokenizer_data"]
 
     if mark_unk:
         result = sp.encode(text, out_type=int)
@@ -92,6 +107,6 @@ def tokenize(text, sp, mark_unk=False):
                 "dictionary": ValueError}
 
 
-def detokenize(tokens):
+def detokenize(tokens, config={}):
     return ''.join([(' ' if ord(token[0]) == 9601 else '') + assemble(explode(token, allow_nonunique_assemble=True))
                     for token in tokens["text"]])

@@ -22,7 +22,7 @@ class Document:
 
     def __iter__(self):
         """
-        :return: sentence and token generator
+        :return: sentence and token generator.
         """
         if self._do_cache and (not self._cached):
             data = ((x['begin'][0], x['begin'][1], x['begin'][2], x['text']) for x in
@@ -43,12 +43,12 @@ class Document:
         yield {'sentence': '', 'tokens': [], 'index': []}
 
     def _generate(self, unit="token", detail=False):
-        self.exhausted = False
         """
         get next item and index
         :param unit: 'token','tokens','sentence','sentences','paragraph','paragraphs','document'
         :return:
         """
+        self.exhausted = False
         if unit == "sentence": unit = "tokens"
         if unit == "paragraph": unit = "sentences"
         if unit == "document": unit = "paragraphs"
