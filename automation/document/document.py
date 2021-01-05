@@ -1,17 +1,20 @@
 import pandas as pd
 
 class Document:
-    def __init__(self, segmenter, tokenizer, detokenizer, cache=True):
-        self.text = ''
-        self.segmenter = segmenter
+    def __init__(self, formatter, tokenizer, detokenizer, cache=True):
+        self.text = ['']
+        self.formatter = formatter
         self.tokenizer = tokenizer
         self.detokenizer = detokenizer
         self._do_cache = cache
         self._cached = False
         self._data = pd.DataFrame()
 
-    def append(self, text):
-        self.text += '\n' + text
+    def append(self, text='', file=None):
+        if file :
+            with open(file, 'r') as fp:
+                self.text.extend(fp.readlines())
+        self.text.extend(text.split('\n'))
         self._cached = False
 
     def __iter__(self):
@@ -49,7 +52,7 @@ class Document:
         idxs_p = []
         idxs_s = []
         idxs_t = []
-        for p in self.segmenter(self.text):  # For each paragraph
+        for p in self.formatter(self.text):  # For each paragraph
             idxs_s.clear()
             idx_tmp_s = (idx_p, idx_s, idx_t)
             for s in p:

@@ -1,3 +1,21 @@
+import re
+
+
+def format(lines):
+    return _segment([_filter(line) for line in lines], debug=False)
+
+
+_filter_separator = re.compile(r'^([-=#]{3}).*\1$')
+_filter_citation = re.compile(r'(?<=[^.\-+*/)( 0-9])[0-9]+')
+
+
+def _filter(line):
+    # re.sub(_filter_separator)
+    line = _filter_separator.sub(' ', line, count=1)
+    line = _filter_citation.sub('', line, count=3)
+    return line
+
+
 def _calc_stat(lines, debug=False):
     # determine document type
     stat_len = len(lines)
@@ -47,25 +65,25 @@ def _split_paragraph(text):
     return output
 
 
-def heuristic_formatting(lines, debug=False):
+def _segment(lines, debug=False):
     """
     Heuristics for paragraph segmentation.
     Output into BERT input file format (Blank lines between documents.)
-    :param lines:
-    :param debug:
-    :return:
+    :param lines: fp.readlines()
+    :param debug: prints some results
+    :return: [ [line,line,...], [line,line,...], ... ]
     """
-    stat = self._calc_stat(lines, debug)
+    stat = _calc_stat(lines, debug)
     if stat["format_exploded"]:
         lines = ('\n'.join(lines).replace("\n\n", "\n")).split('\n')
         lines = [v for i, v in enumerate(lines) if i == 0 or v != lines[i - 1]]
     if stat["format_split"]:
         lines = ' '.join([(x if len(x) > 3 else x + '\n') for x in lines]).split('\n')
 
-    stat = self._calc_stat(lines, debug) if (stat["format_split"] or stat["format_exploded"]) else stat
+    stat = _calc_stat(lines, debug) if (stat["format_split"] or stat["format_exploded"]) else stat
     if stat["format_para"]:
         # lines = [x for y in [x.split(". ") for x in lines] for x in [x+'.' for x in y[:-1]]+[y[-1]]]
-        lines = [x for y in [self._split_paragraph(x) for x in lines] for x in y]
+        lines = [x for y in [_split_paragraph(x) for x in lines] for x in y]
     elif stat["format_sent"]:
         pass
     else:
@@ -73,7 +91,6 @@ def heuristic_formatting(lines, debug=False):
 
     is_valid = (stat['segment_size_avg'] < 2000)  # segmentation result is valid
     if not is_valid:
-        # What if we do it using TF-IDF
         print(f"Paragraph too large ({stat['segment_size_avg']})")
         N = 10
         lines = [y for x in [lines[i * N:i * N + N] + [''] for i in range(int(len(lines) / N))] for y in x]

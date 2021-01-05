@@ -1,6 +1,6 @@
 import document
 from parser.jamo_utf8 import parser
-import segmenter
+import formatter
 import reporter
 import tokenizer
 import embedder
