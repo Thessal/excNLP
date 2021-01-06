@@ -1,4 +1,4 @@
-def format(lines):
+def format(lines, config={}):
 
     # paragraph
     idx = [-1] + [i for i, x in enumerate(lines) if not x.strip()] + [len(lines)]

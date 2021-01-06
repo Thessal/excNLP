@@ -56,7 +56,6 @@ JUNGSUNG_MAP = {JUNGSUNG_LIST[i]: i for i in range(len(JUNGSUNG_LIST))}
 JONGSUNG_MAP = {JONGSUNG_LIST[i]: i for i in range(len(JONGSUNG_LIST))}
 
 
-@staticmethod
 def explode(korean_word, allow_nonunique_assemble=True):
     """
     explodes hangul.
@@ -118,7 +117,7 @@ def _join_char(exploded_char):
 # FFD2..FFD7    ; Hangul # Lo   [6] HALFWIDTH HANGUL LETTER YO..HALFWIDTH HANGUL LETTER YU
 # FFDA..FFDC    ; Hangul # Lo   [3] HALFWIDTH HANGUL LETTER EU..HALFWIDTH HANGUL LETTER I
 # # Total code points: 11739
-@staticmethod
+
 def assemble(exploded_word):
     """
     :param exploded_word: a word without space
@@ -135,8 +134,8 @@ def assemble(exploded_word):
     #         word[-1] = word[-1] + (exploded_word[-1],)
     #     return ''.join(([_join_char(c) for c in word]))
     else:  # contains non-hangul or jaeum-meoum only
-        if ' ' in exploded_word:
-            print("Warning: assembling space character")
+        # if ' ' in exploded_word:
+        #     print("Warning: assembling space character")
         output = []
         state = -1  # -1=nonkor, 0=cho, 1=jung, 2=jong
         for c in exploded_word:

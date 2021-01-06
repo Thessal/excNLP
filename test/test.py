@@ -1,3 +1,5 @@
+
+
 import document
 from parser.jamo_utf8 import parser
 import formatter

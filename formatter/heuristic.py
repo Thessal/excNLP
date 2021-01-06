@@ -1,14 +1,16 @@
 import re
 
 
-def format(lines):
-    paragraphs = _segment([_filter(line) for line in lines], debug=False)
-    return [[x for sentence in paragraph for x in sbd(sentence)] for paragraph in paragraphs]
+def format(lines, config={}):
+    paragraphs = _segment(lines, debug=False)
+    return [[_filter(x) for sentence in paragraph for x in sbd(sentence)] for paragraph in paragraphs]
+
+
+_boundary = re.compile(r'[!\?\.] ')
 
 
 def sbd(text, sentence_length_min=20):  # sentence boundary disambiguation
-    ses = ['. ', '? ']  # sentence ending suffixes
-    sep = [0] + [cur + 1 for cur in range(len(text) - 1) if (text[cur:cur + 2] in ses)] + [len(text)]
+    sep = [0] + [x.end(0) for x in _boundary.finditer(text)] + [len(text)]
     sen = [text[i[0]:i[1]].strip() for i in zip(sep[:-1], sep[1:])]
     for i in range(len(sen) - 1):
         if len(sen[i]) < sentence_length_min:
@@ -28,6 +30,7 @@ _filter_citation = re.compile(r'(?<=[^.\-+*/)( 0-9])[0-9]+')
 
 def _filter(line):
     # re.sub(_filter_separator)
+    line = line.strip()
     line = _filter_separator.sub(' ', line, count=1)
     line = _filter_citation.sub('', line, count=3)
     return line
@@ -85,10 +88,9 @@ def _split_paragraph(text):
 def _segment(lines, debug=False):
     """
     Heuristics for paragraph segmentation.
-    Output into BERT input file format (Blank lines between documents.)
     :param lines: fp.readlines()
     :param debug: prints some results
-    :return: [ [line,line,...], [line,line,...], ... ]
+    :return: [ [line,line,...], [line,line,...], ... ] (approximately)
     """
     stat = _calc_stat(lines, debug)
     if stat["format_exploded"]:
@@ -112,7 +114,11 @@ def _segment(lines, debug=False):
         N = 10
         lines = [y for x in [lines[i * N:i * N + N] + [''] for i in range(int(len(lines) / N))] for y in x]
 
-    output = [v for i, v in enumerate(lines) if i == 0 or (len(lines[i]) + len(lines[i - 1])) > 3]
+    output = [v.strip() for i, v in enumerate(lines) if i == 0 or (len(lines[i]) + len(lines[i - 1])) > 3]
     if debug:
         print('\n'.join(output[:50]))
+
+    # Group by paragraph
+    paragraph_boundary = [i for i,x in enumerate(output) if not x]
+    output = [output[a:b] for a,b in zip([0]+[x+1 for x in paragraph_boundary],paragraph_boundary+[len(output)])]
     return output

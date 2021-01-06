@@ -1,10 +1,7 @@
 import sentencepiece as spm
-from document.document import Document
 import os
 from .explode import explode
 from .explode import assemble
-import collections
-from embedder.bert.tokenization import convert_to_unicode
 
 
 def initialize(model_path, train_text_files, delete_previous_file=False,
@@ -65,20 +62,22 @@ def initialize(model_path, train_text_files, delete_previous_file=False,
             nbest_size=-1,
             alpha=0.1
         )
-        config["tokenizer_type"] = "SentencePiece"
-        config["tokenizer_data"] = sp
-        config["tokenizer_path"] = model_path
+        if "tokenizer" not in config.keys():
+            config.update({"tokenizer":{"SentencePiece":{}}})
+        config["tokenizer"]["SentencePiece"]["data"] = sp
+        config["tokenizer"]["SentencePiece"]["path"] = model_path
         with open(path_vocab, "r") as fp:
             vocab = [x.strip().split('\t') for x in fp.readlines()]
-        config["tokenizer_vocab"] = {"tokens": [x[0] for x in vocab],
+        config["tokenizer"]["SentencePiece"]["vocab"] = {"tokens": [x[0] for x in vocab],
                                      "special": {
                                          "UNKNOWN": {"idx": 0, "token": '< unk >'},
                                          "BEGIN": {"idx": 1, "token": '< s >'},
                                          "END": {"idx": 2, "token": '< / s >'},
                                      }}
         return config
-    except:
+    except Exception as e:
         print("Warning : Failed to load model")
+        raise(e)
 
 
 def tokenize(line, mark_unk=False, config={}):
@@ -86,14 +85,14 @@ def tokenize(line, mark_unk=False, config={}):
     NOTE : sentencepiece automatically assembles jamo partially
     :param config: {"sp":SentencePieceProcessor}
     :param line: str
-    :param mark_unk: replace original token to UNK
+    :param mark_unk: replace original token to UNK. detokenization is lossy.
     :return: {"text":[str, str, ...], "index":[int, int, ...], "dictionary":dict(str,int)}
     """
 
     text = explode(line)
-    if config["tokenizer_type"] != "SentencePiece":
+    if "SentencePiece" not in config["tokenizer"].keys():
         raise ValueError("Tokenizer sentencepiece is not initialized")
-    sp = config["tokenizer_data"]
+    sp = config["tokenizer"]["SentencePiece"]["data"]
 
     if mark_unk:
         result = sp.encode(text, out_type=int)
@@ -108,5 +107,10 @@ def tokenize(line, mark_unk=False, config={}):
 
 
 def detokenize(tokens, config={}):
-    return ''.join([(' ' if ord(token[0]) == 9601 else '') + assemble(explode(token, allow_nonunique_assemble=True))
-                    for token in tokens["text"]])
+    return assemble(
+        ''.join(
+            [(' ' if ord(token[0]) == 9601 else '') + explode(token, allow_nonunique_assemble=True)
+            for token in tokens["text"]]
+    ))
+    # return ''.join([(' ' if ord(token[0]) == 9601 else '') + assemble(explode(token, allow_nonunique_assemble=True))
+    #                 for token in tokens["text"]])

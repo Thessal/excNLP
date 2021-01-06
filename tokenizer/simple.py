@@ -12,5 +12,5 @@ def tokenize(line, config={}):
             "dictionary": None}
 
 def detokenize(tokens, config={}):
-    return [' '.join(token) for token in tokens["text"]]
+    return ' '.join(tokens["text"])
 

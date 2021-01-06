@@ -3,6 +3,7 @@ data
 secret.py
 __pycache__
 script/__pycache__
+poetry.lock
 
 .DS_Store
 Thumbs.db
