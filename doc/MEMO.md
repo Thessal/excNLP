@@ -1,3 +1,22 @@
+
+### Target Functionality
+* Improve Korean (or Parapharsing, or OCR improvement, or Text summarization)
+* Semantic search (or deduction, or QA training, or Translation)
+* Named entity graph (NER, visualization)
+* Web interface
+
+#### Process
+ * Crawl, Buy book, Record TV, Shortwave, Conversation
+ * Parsing, OCR, Voice recognition, Signal processing
+ * Summarize, NER
+ * Query
+ 
+### Features
+* Korean specific morphological analysis based (Johab)
+* Automatic paragraph segmentation & Summarization
+  * Heuristic
+  * Topic-based (TF-IDF & Kernel density estimation) 
+  
 ## MEMO
 
 ### Study

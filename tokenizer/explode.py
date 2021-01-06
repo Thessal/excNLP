@@ -56,23 +56,6 @@ JUNGSUNG_MAP = {JUNGSUNG_LIST[i]: i for i in range(len(JUNGSUNG_LIST))}
 JONGSUNG_MAP = {JONGSUNG_LIST[i]: i for i in range(len(JONGSUNG_LIST))}
 
 
-# https://frhyme.github.io/python/python_korean_englished/
-# def korean_to_be_englished(korean_word):
-#     r_lst = []
-#     for w in list(korean_word.strip()):
-#         ## 영어인 경우 구분해서 작성함.
-#         if '가' <= w <= '힣':
-#             ## 588개 마다 초성이 바뀜.
-#             ch1 = (ord(w) - ord('가')) // 588
-#             ## 중성은 총 28가지 종류
-#             ch2 = ((ord(w) - ord('가')) - (588 * ch1)) // 28
-#             ch3 = (ord(w) - ord('가')) - (588 * ch1) - 28 * ch2
-#             r_lst.append([CHOSUNG_LIST[ch1], JUNGSUNG_LIST[ch2], JONGSUNG_LIST[ch3]])
-#         else:
-#             r_lst.append([w])
-#     return r_lst
-
-@staticmethod
 def explode(korean_word, allow_nonunique_assemble=True):
     """
     explodes hangul.
@@ -134,7 +117,7 @@ def _join_char(exploded_char):
 # FFD2..FFD7    ; Hangul # Lo   [6] HALFWIDTH HANGUL LETTER YO..HALFWIDTH HANGUL LETTER YU
 # FFDA..FFDC    ; Hangul # Lo   [3] HALFWIDTH HANGUL LETTER EU..HALFWIDTH HANGUL LETTER I
 # # Total code points: 11739
-@staticmethod
+
 def assemble(exploded_word):
     """
     :param exploded_word: a word without space
@@ -151,8 +134,8 @@ def assemble(exploded_word):
     #         word[-1] = word[-1] + (exploded_word[-1],)
     #     return ''.join(([_join_char(c) for c in word]))
     else:  # contains non-hangul or jaeum-meoum only
-        if ' ' in exploded_word:
-            print("Warning: assembling space character")
+        # if ' ' in exploded_word:
+        #     print("Warning: assembling space character")
         output = []
         state = -1  # -1=nonkor, 0=cho, 1=jung, 2=jong
         for c in exploded_word:
