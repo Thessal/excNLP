@@ -1,0 +1,25 @@
+[tool.poetry]
+name = "automation"
+version = "0.1.0"
+description = ""
+authors = ["Jongkook Choi <jongkook90@gmail.com>"]
+
+[tool.poetry.dependencies]
+python = "^3.8"
+konlpy = "^0.5.2"
+tensorflow = "^2.4.0"
+tensorflow-text = "^2.4.2"
+bert-for-tf2 = "^0.14.7"
+sklearn = "^0.0"
+pandas = "^1.1.5"
+matplotlib = "^3.3.3"
+tflite-runtime = {url = "https://github.com/google-coral/pycoral/releases/download/release-frogfish/tflite_runtime-2.5.0-cp38-cp38-macosx_10_15_x86_64.whl"}
+pycoral = {url = "https://github.com/google-coral/pycoral/releases/download/release-frogfish/pycoral-1.0.0-cp38-cp38-macosx_10_15_x86_64.whl"}
+scipy = "^1.5.4"
+sentencepiece = "^0.1.94"
+
+[tool.poetry.dev-dependencies]
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
