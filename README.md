@@ -5,7 +5,7 @@ Generates report from Korean texts, using NLP.
 ### Features
 
 #### Segmentation
-![Paragaraph segmentation based on topic](reports/의료윤리.png)
+![Paragaraph segmentation based on topic](reports/91f7f3f9e675d227740177789ee39e3008b60111_topic_segment.png)
 
 #### Bert pretraining
 (hidden_size = 192)
