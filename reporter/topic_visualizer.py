@@ -1,7 +1,10 @@
 import numpy as np
 from tokenizer.explode import explode
 from tokenizer.explode import assemble
-
+from scipy.stats import gaussian_kde
+import matplotlib.pyplot as plt
+import pandas as pd
+import io
 
 class TrieNode:
     """A node in the trie structure"""
@@ -24,8 +27,6 @@ class TrieNode:
 
 
 class Trie(object):
-    from util.explode import assemble as _assemble
-    from util.explode import explode as _explode
     """The trie object"""
 
     def __init__(self, list_words=[], auto_explode=True):
@@ -35,8 +36,8 @@ class Trie(object):
         """
         self.root = TrieNode("")
         self.output = []
-        self.assemble = self._assemble if auto_explode else lambda x: x
-        self.explode = self._explode if auto_explode else lambda x: x
+        self.assemble = assemble if auto_explode else lambda x: x
+        self.explode = explode if auto_explode else lambda x: x
         for w in (w for w in list_words):
             self.insert(w)
 
@@ -134,68 +135,75 @@ class Trie(object):
         return {w: freq[w] for w in top_words}
 
 
-n = 10
+def visualize(paragraphs, n=10):
+    """
 
-ps = paragraphs
-# for ps in self.generate(unit="paragraphs", detail=True):
-word_offset = [p["begin"][3] for p in ps["element"]] + [ps["end"][3]]
-word_count = [x - y for x, y in zip(word_offset[1:], word_offset[:-1])]
-sentence_offset = [p["begin"][2] for p in ps["element"]] + [ps["end"][2]]
-sentence_count = [x - y for x, y in zip(sentence_offset[1:], sentence_offset[:-1])]
+    Args:
+        document: dict (document.iter_file(unit="paragraph"))
+        n: segment count
 
-ps = [p["text"] for p in ps["element"]]
-print(f"[document_model.tfidf]\n"
-      f"paragraph count: {len(ps)}\n"
-      f"sentence count per paragraph : {' '.join(ps).count('. ') / len(ps):.2f}\n")
+    Returns:
+        IObytes PNG file
+    """
+    assert (paragraphs["type"]== "document")
+    document_name = paragraphs["name"]
+    df = paragraphs["data"]
+    ps = df["paragraph"].tolist()
+    word_offset = df["idx_token_begin"].tolist() + [df["idx_token_end"].iloc[-1]]
+    sentence_offset = df["idx_sentence_begin"].tolist() + [df["idx_sentence_end"].iloc[-1]]
+    word_count = [x - y for x, y in zip(word_offset[1:], word_offset[:-1])]
+    sentence_count = [x - y for x, y in zip(sentence_offset[1:], sentence_offset[:-1])]
+    #
+    # ps = [p["text"] for p in ps["element"]]
+    # print(f"[document_model.tfidf]\n"
+    #       f"paragraph count: {len(ps)}\n"
+    #       f"sentence count per paragraph : {' '.join(ps).count('. ') / len(ps):.2f}\n")
 
-## Determine TF-IDF parameters from bow
-# bow = dict(Trie(' '.join(ps).split(' ')).query("")))
-tf_inverse_cdf = lambda y: 0 if y > 0.1 else min(y, 0.05)  # FIXME : Magic numbers
-idf_inverse_cdf = lambda y: -np.log(y)  # lambda y: np.log((1-y)/y)
-## Count
-bow_size = int(np.sqrt(n * len(ps)))
-subword = False  # We need a better candidate heuristic to enable this.
-if subword:
-    bow = {w: explode(w) for w in Trie(' '.join(ps).split(' ')).top_n_items(n=bow_size).keys()}
-    # ps = [' '.join([self.explode(w) for w in p.split(' ')]) for p in ps]
-    ps = [explode(p) for p in ps]
-    print(bow)
-else:
-    bow = {w: w for w in Trie(' '.join(ps).split(' '), auto_explode=False).top_n_items(n=bow_size).keys()}
-tfs = [{w: p.count(e) for w, e in bow.items()} for p in ps]
-idfs = {w: sum([(e in p) for p in ps]) for w, e in bow.items()}
-## normalize & transform
-assert len(tfs) == len(word_count)
-tfs = [dict(zip(tf.keys(), np.array(list(tf.values())) / max(1, wc))) for tf, wc in zip(tfs, word_count)]
-idfs = dict(zip(idfs.keys(), np.array(list(idfs.values())) / max(1, sum(idfs.values()))))
-tfs = [{k: tf_inverse_cdf(v) for k, v in tf.items()} for tf in tfs]
-idfs = [{k: idf_inverse_cdf(v) for k, v in idfs.items()}] * len(ps)
-## calculate tfidf
-tfidfs = [{k: tf[k] * idf[k] for k in tf.keys()} for tf, idf in zip(tfs, idfs)]
-## Weighted tfidfs
-assert len(tfidfs) == len(sentence_count)
-weight = [w ** 0.5 for w in sentence_count]
-tfidfs = [dict(zip(x.keys(), [v * w for v in x.values()])) for w, x in zip(weight, tfidfs)]
-tfidfs = [{k: int(100 * tfidf[k]) for k in sorted(tfidf.keys(), key=tfidf.get, reverse=True)[:n] if
-           tfidf[k] > 0.01} for tfidf in tfidfs]  # FIXME : Magic numbers
-## Extract keywords
-candidates = set(sum([list(tfidf.keys()) for tfidf in tfidfs], []))
-[[tfidf.setdefault(x, 0) for x in candidates] for tfidf in tfidfs]  # sets default
-candidates_tfs = {x: sum([tf[x] for tf in tfs]) for x in candidates}
-for k in candidates:  # FIXME : Heuristic
-    subwords = [(n + 1, k[:-n - 1]) for n in range(len(k) - 1)]
-    for level, subword in subwords:
-        if subword in candidates_tfs.keys():
-            if candidates_tfs[subword] > candidates_tfs[k] * (3 ** level):  # 도시는, 도시를, 도시가, 도시., 도시다, ...
-                candidates = [x for x in candidates if x != k]
-            if candidates_tfs[subword] < candidates_tfs[k] * (1 + 0.1 * level):  # 디오, 디오게, 디오게네, 디오게네스
-                candidates = [x for x in candidates if x != subword]
-n_topic_segmentation = 10
-n_topic_visualization = 5
-if True:
-    from scipy.stats import gaussian_kde
-    import matplotlib.pyplot as plt
-    import pandas as pd
+    ## Determine TF-IDF parameters from bow
+    # bow = dict(Trie(' '.join(ps).split(' ')).query("")))
+    tf_inverse_cdf = lambda y: 0 if y > 0.1 else min(y, 0.05)  # FIXME : Magic numbers
+    idf_inverse_cdf = lambda y: -np.log(y)  # lambda y: np.log((1-y)/y)
+    ## Count
+    bow_size = int(np.sqrt(n * len(ps)))
+    subword = False  # We need a better candidate heuristic to enable this.
+    if subword:
+        bow = {w: explode(w) for w in Trie(' '.join(ps).split(' ')).top_n_items(n=bow_size).keys()}
+        # ps = [' '.join([self.explode(w) for w in p.split(' ')]) for p in ps]
+        ps = [explode(p) for p in ps]
+        print(bow)
+    else:
+        bow = {w: w for w in Trie(' '.join(ps).split(' '), auto_explode=False).top_n_items(n=bow_size).keys()}
+    tfs = [{w: p.count(e) for w, e in bow.items()} for p in ps]
+    idfs = {w: sum([(e in p) for p in ps]) for w, e in bow.items()}
+    ## normalize & transform
+    assert len(tfs) == len(word_count)
+    tfs = [dict(zip(tf.keys(), np.array(list(tf.values())) / max(1, wc))) for tf, wc in zip(tfs, word_count)]
+    idfs = dict(zip(idfs.keys(), np.array(list(idfs.values())) / max(1, sum(idfs.values()))))
+    tfs = [{k: tf_inverse_cdf(v) for k, v in tf.items()} for tf in tfs]
+    idfs = [{k: idf_inverse_cdf(v) for k, v in idfs.items()}] * len(ps)
+    ## calculate tfidf
+    tfidfs = [{k: tf[k] * idf[k] for k in tf.keys()} for tf, idf in zip(tfs, idfs)]
+    ## Weighted tfidfs
+    assert len(tfidfs) == len(sentence_count)
+    weight = [w ** 0.5 for w in sentence_count]
+    tfidfs = [dict(zip(x.keys(), [v * w for v in x.values()])) for w, x in zip(weight, tfidfs)]
+    tfidfs = [{k: int(100 * tfidf[k]) for k in sorted(tfidf.keys(), key=tfidf.get, reverse=True)[:n] if
+               tfidf[k] > 0.01} for tfidf in tfidfs]  # FIXME : Magic numbers
+    ## Extract keywords
+    candidates = set(sum([list(tfidf.keys()) for tfidf in tfidfs], []))
+    [[tfidf.setdefault(x, 0) for x in candidates] for tfidf in tfidfs]  # sets default
+    candidates_tfs = {x: sum([tf[x] for tf in tfs]) for x in candidates}
+    for k in candidates:  # FIXME : Heuristic
+        subwords = [(n + 1, k[:-n - 1]) for n in range(len(k) - 1)]
+        for level, subword in subwords:
+            if subword in candidates_tfs.keys():
+                if candidates_tfs[subword] > candidates_tfs[k] * (3 ** level):  # 도시는, 도시를, 도시가, 도시., 도시다, ...
+                    candidates = [x for x in candidates if x != k]
+                if candidates_tfs[subword] < candidates_tfs[k] * (1 + 0.1 * level):  # 디오, 디오게, 디오게네, 디오게네스
+                    candidates = [x for x in candidates if x != subword]
+    n_topic_segmentation = 10
+    n_topic_visualization = 5
+
     ## KDE
     keywords = candidates
     paragraph_position = [idx for idx in word_offset[:-1]]
@@ -208,8 +216,10 @@ if True:
     ## Keyword selection from maximum probability
     keywords = df.max(axis=0).nlargest(n_topic_segmentation).index
     df[keywords[:min(n_topic_segmentation, n_topic_visualization)]].plot()
-    plt.legend(prop={"family": "AppleGothic"})
-    plt.show()
+    bytes_kde = io.BytesIO()
+    plt.savefig(bytes_kde,  format='png')
+    plt.close()
+    # plt.show()
 
     ## Segmentation
     major_topics = df[keywords].idxmax(axis=1)
@@ -245,5 +255,9 @@ if True:
                      bbox=dict(facecolor=(1, 1, 1, 0.5), edgecolor='None', pad=0.0))
     # consider hash text into RB and segment index into G.
     # text wrap
-    plt.show()
-yield tfidfs
+    # plt.show()
+    bytes_segment = io.BytesIO()
+    plt.savefig(bytes_segment,  format='png')
+    plt.close()
+
+    return bytes_kde, bytes_segment

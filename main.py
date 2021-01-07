@@ -1,8 +1,6 @@
 import dmgr.builder
-import formatter.simple
-import formatter.heuristic
-import tokenizer.simple
 import tokenizer.sentencepiece
+import reporter.reporter as reporter
 
 config = {
     "tokenizer":{
@@ -15,3 +13,4 @@ dmgr.builder.build_all(config)
 
 from document.document import Document
 doc = Document("data/datasets/TEXT_BOOK.json", config=config)
+reporter.report_to_file(doc)

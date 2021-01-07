@@ -107,6 +107,9 @@ def tokenize(line, mark_unk=False, config={}):
 
 
 def detokenize(tokens, config={}):
+    if not isinstance(tokens, dict) :
+        tokens = {"text":[str(x) for x in tokens]}
+    assert isinstance(tokens, dict)
     return assemble(
         ''.join(
             [(' ' if ord(token[0]) == 9601 else '') + explode(token, allow_nonunique_assemble=True)
