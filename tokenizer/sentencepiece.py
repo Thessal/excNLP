@@ -63,21 +63,22 @@ def initialize(model_path, train_text_files, delete_previous_file=False,
             alpha=0.1
         )
         if "tokenizer" not in config.keys():
-            config.update({"tokenizer":{"SentencePiece":{}}})
-        config["tokenizer"]["SentencePiece"]["data"] = sp
-        config["tokenizer"]["SentencePiece"]["path"] = model_path
+            config.update({"tokenizer": {"sentencepiece": {}}})
+        config["tokenizer"]["sentencepiece"]["data"] = sp
+        config["tokenizer"]["sentencepiece"]["path"] = model_path
         with open(path_vocab, "r") as fp:
             vocab = [x.strip().split('\t') for x in fp.readlines()]
-        config["tokenizer"]["SentencePiece"]["vocab"] = {"tokens": [x[0] for x in vocab],
-                                     "special": {
-                                         "UNKNOWN": {"idx": 0, "token": '< unk >'},
-                                         "BEGIN": {"idx": 1, "token": '< s >'},
-                                         "END": {"idx": 2, "token": '< / s >'},
-                                     }}
+        config["tokenizer"]["sentencepiece"]["vocab"] = {"tokens": [x[0] for x in vocab],
+                                                         "special": {
+                                                             "UNKNOWN": {"idx": 0, "token": '<unk>'},
+                                                             "BEGIN": {"idx": 1, "token": '<s>'},
+                                                             "END": {"idx": 2, "token": '</s>'},
+                                                         }}
+        # config["tokenizer"]["sentencepiece"]["detokenizer"] = detokenize
         return config
     except Exception as e:
         print("Warning : Failed to load model")
-        raise(e)
+        raise (e)
 
 
 def tokenize(line, mark_unk=False, config={}):
@@ -90,9 +91,9 @@ def tokenize(line, mark_unk=False, config={}):
     """
 
     text = explode(line)
-    if "SentencePiece" not in config["tokenizer"].keys():
+    if "sentencepiece" not in config["tokenizer"].keys():
         raise ValueError("Tokenizer sentencepiece is not initialized")
-    sp = config["tokenizer"]["SentencePiece"]["data"]
+    sp = config["tokenizer"]["sentencepiece"]["data"]
 
     if mark_unk:
         result = sp.encode(text, out_type=int)
@@ -107,13 +108,13 @@ def tokenize(line, mark_unk=False, config={}):
 
 
 def detokenize(tokens, config={}):
-    if not isinstance(tokens, dict) :
-        tokens = {"text":[str(x) for x in tokens]}
+    if not isinstance(tokens, dict):
+        tokens = {"text": [str(x) for x in tokens]}
     assert isinstance(tokens, dict)
     return assemble(
         ''.join(
             [(' ' if ord(token[0]) == 9601 else '') + explode(token, allow_nonunique_assemble=True)
-            for token in tokens["text"]]
-    ))
+             for token in tokens["text"]]
+        ))
     # return ''.join([(' ' if ord(token[0]) == 9601 else '') + assemble(explode(token, allow_nonunique_assemble=True))
     #                 for token in tokens["text"]])

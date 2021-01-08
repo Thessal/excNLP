@@ -1,5 +1,7 @@
 def initialize(config= {}):
-    config["tokenizer"] = {"simple":{}}
+    config["tokenizer"] = {"simple":{
+            # "detokenizer": detokenize
+        }}
     return config
 
 def tokenize(line, config={}):

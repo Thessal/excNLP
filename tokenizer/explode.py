@@ -1,3 +1,8 @@
+# utf-8 nfd nfc conversion
+# check out unicodedata
+#unicodedata.normalize('NFD',"str")
+
+
 # if Explicitly Jongsung, explode("때무") is not in explode("때문") because ㄸㅐ\x00ㅁㅜ\x00 not in ㄸㅐ\x00ㅁㅜㄴ
 EXPLICIT_JONGSUNG = False
 

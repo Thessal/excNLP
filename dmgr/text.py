@@ -2,7 +2,7 @@ import pandas as pd
 import os
 
 
-def build(files, formatter, tokenizer, config):
+def build(files, modules, cfg_dataset, config):
     """
 
     Args:
@@ -13,6 +13,8 @@ def build(files, formatter, tokenizer, config):
     Returns:
 
     """
+    formatter = modules.formatters[cfg_dataset["formatter"]]
+    tokenizer = modules.tokenizers[cfg_dataset["tokenizer"]]
     for file_in, file_out in files:
         if os.path.isfile(file_out):
             continue
@@ -21,7 +23,6 @@ def build(files, formatter, tokenizer, config):
             indexed = ((x['begin'][0], x['begin'][1], x['begin'][2], x['text']) for x in indexer)
             df = pd.DataFrame(columns=["idx_paragraph", "idx_sentence", "idx_token", "token"], data=indexed)
         df.to_pickle(file_out, compression="infer")
-
 
 def _generate(text, formatter, tokenizer, config, unit="token", detail=False):
     """
@@ -40,13 +41,13 @@ def _generate(text, formatter, tokenizer, config, unit="token", detail=False):
     idxs_p = []
     idxs_s = []
     idxs_t = []
-    for p in formatter.format(text,config=config):  # For each paragraph
+    for p in formatter.format(text, config=config):  # For each paragraph
         idxs_s.clear()
         idx_tmp_s = (idx_p, idx_s, idx_t)
         for s in p:
             idxs_t.clear()
             idx_tmp_w = (idx_p, idx_s, idx_t)
-            for t in tokenizer.tokenize(s,config=config)["text"]:
+            for t in tokenizer.tokenize(s, config=config)["text"]:
                 if unit == "token": yield {'text': t, 'begin': (idx_p, idx_s, idx_t)}
                 if unit == "tokens_detail": idxs_t.append((idx_p, idx_s, idx_t))
                 idx_t += 1
