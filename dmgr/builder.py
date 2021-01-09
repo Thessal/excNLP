@@ -22,7 +22,6 @@ def build_all(datasets,config):
                  for path in source_files]
         build(files, cfg_dataset['dmgr'], config, name=os.path.basename(cfg_dataset["dataset_path"]))
 
-
 def hash(s):
     return hashlib.sha1(
         unicodedata.normalize('NFD', s).encode('utf-8')

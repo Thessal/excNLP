@@ -4,15 +4,52 @@ from .explode import explode
 from .explode import assemble
 
 
+class LinesIterator:
+    def __init__(self, files, chunk_size):
+        self.files = iter(files)
+        self.chunk_size = max(1, chunk_size)
+        self.buffer = []
+        self.depleted = False
+        self.index = 0
+
+    def __iter__(self):
+        return self
+
+    def __next__(self):
+        while len(self.buffer) < self.chunk_size:
+            try:
+                with open(next(self.files), 'r') as fp:
+                    lines = []
+                    for line in fp.readlines():
+                        line = line.strip()
+                        if len(line) > 1000:
+                            line = line.split('. ')
+                            line[:-1] = [x + '.' for x in line[:-1]]
+                            if any([len(x) for x in line]):
+                                print(f"Too long : {line}")
+                            lines.extend(line)
+                        else:
+                            lines.append(line)
+                    self.buffer.extend(lines)
+            except StopIteration:
+                if not self.depleted:
+                    self.depleted = True
+                    self.buffer.extend([''] * (self.chunk_size - (self.index % self.chunk_size)))
+                break
+        self.index += 1
+        # print(self.index, explode(self.buffer[0]))
+        return explode(self.buffer.pop(0))
+
+
 def initialize(model_path, train_text_files, delete_previous_file=False,
-               chunksize=1000, character_coverage=0.9995, vocab_size=200000,
+               chunksize=0, character_coverage=0.9995, vocab_size=200000,
                config={}):
     """
     Loads sentencepiece tokenizer. Trains if model does not exist.
     :param model_path: model directory
     :param train_text_files: one-sentence-per-line raw corpus file.
     :param delete_previous_file:
-    :param chunksize:
+    :param chunksize: sentence count per batch. 0 for one shot training.
     :param character_coverage:
     :param vocab_size:
     :return: SentencePieceProcessor
@@ -31,23 +68,13 @@ def initialize(model_path, train_text_files, delete_previous_file=False,
                 print("Failed to delete.")
 
     if not os.path.isfile(model_prefix + ".model"):
-        def iterate_line_over_file(files):
-            buffer = []
-            for file in files:
-                with open(file, 'r') as fp:
-                    for line in fp.readlines():
-                        buffer.append(line)
-                        if len(buffer) >= chunksize:
-                            yield buffer
-                            buffer = []
-            yield buffer
-
-        for chunk in iterate_line_over_file(train_text_files):
-            # other args : training_sentence_size, mining_sentence_size, seed_sentencepiece_size=1000000, shrinking_factor=0.75
-            # input : one-sentence-per-line raw corpus file. No need to run tokenizer, normalizer or preprocessor.
-            # input_sentence_size=chunksize, shuffle_input_sentence=False,
-            spm.SentencePieceTrainer.Train(sentence_iterator=chunk, model_prefix=model_prefix,
+        # TODO : need version control. e.g. train_text update
+        lines_iterator = LinesIterator(train_text_files, chunksize)
+        # https://github.com/google/sentencepiece/blob/master/doc/options.md
+        while not lines_iterator.depleted:
+            spm.SentencePieceTrainer.Train(sentence_iterator=lines_iterator, model_prefix=model_prefix,
                                            character_coverage=character_coverage, vocab_size=vocab_size,
+                                           input_sentence_size=chunksize, shuffle_input_sentence=False,
                                            model_type='unigram', )
 
     try:

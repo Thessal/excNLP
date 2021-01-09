@@ -1,12 +1,24 @@
 # utf-8 nfd nfc conversion
-# check out unicodedata
-#unicodedata.normalize('NFD',"str")
+
+# TODO
+# import unicodedata
+# def explode(text):
+#     return convert_to_roman(unicodedata.normalize('NFD', text)) # explicit jonsung distinguish
+# def assemble(text):
+#     return unicodedata.normalize('NFC', convert_HANGUL_COMPATIBILITY_JAMO (text))
+
+
+# Following code is little bit hacky. This will result loss in NFD-NFC conversion.
+# e.g. '한' -> 'ㅎㅏㄴ' -> '하ㄴ'
+# This can produce undefined behavior in sentencepiece tokenizer
+# So it will be better to use roman character converion
 
 
 # if Explicitly Jongsung, explode("때무") is not in explode("때문") because ㄸㅐ\x00ㅁㅜ\x00 not in ㄸㅐ\x00ㅁㅜㄴ
 EXPLICIT_JONGSUNG = False
 
 # 초성 리스트. 00 ~ 18
+# Maybe we can ignore 'ㅇ', like romanization
 CHOSUNG_LIST = ['ㄱ', 'ㄲ', 'ㄴ', 'ㄷ', 'ㄸ', 'ㄹ', 'ㅁ', 'ㅂ', 'ㅃ', 'ㅅ', 'ㅆ', 'ㅇ', 'ㅈ', 'ㅉ', 'ㅊ', 'ㅋ', 'ㅌ', 'ㅍ', 'ㅎ']
 # 중성 리스트. 00 ~ 20
 JUNGSUNG_LIST = ['ㅏ', 'ㅐ', 'ㅑ', 'ㅒ', 'ㅓ', 'ㅔ', 'ㅕ', 'ㅖ', 'ㅗ', 'ㅘ', 'ㅙ', 'ㅚ', 'ㅛ', 'ㅜ', 'ㅝ', 'ㅞ', 'ㅟ', 'ㅠ', 'ㅡ', 'ㅢ',
@@ -17,43 +29,51 @@ JUNGSUNG_LIST = ['ㅏ', 'ㅐ', 'ㅑ', 'ㅒ', 'ㅓ', 'ㅔ', 'ㅕ', 'ㅖ', 'ㅗ', 
 JONGSUNG_LIST = [chr(0) if EXPLICIT_JONGSUNG else '', 'ㄱ', 'ㄲ', 'ㄳ', 'ㄴ', 'ㄵ', 'ㄶ', 'ㄷ', 'ㄹ', 'ㄺ', 'ㄻ', 'ㄼ', 'ㄽ', 'ㄾ',
                  'ㄿ', 'ㅀ', 'ㅁ', 'ㅂ', 'ㅄ', 'ㅅ',
                  'ㅆ', 'ㅇ', 'ㅈ', 'ㅊ', 'ㅋ', 'ㅌ', 'ㅍ', 'ㅎ']
-HANGUL_COMPATIBILITY_JAMO = {4352: "ㄱ", 4353: "ㄲ", 4354: "ㄴ", 4355: "ㄷ", 4356: "ㄸ", 4357: "ㄹ", 4358: "ㅁ", 4359: "ㅂ",
-                             4360: "ㅃ", 4361: "ㅅ", 4362: "ㅆ", 4363: "ㅇ", 4364: "ㅈ", 4365: "ㅉ", 4366: "ㅊ", 4367: "ㅋ",
-                             4368: "ㅌ", 4369: "ㅍ", 4370: "ㅎ", 4449: "ᅡ", 4450: "ᅢ", 4451: "ᅣ", 4452: "ᅤ", 4453: "ᅥ",
-                             4454: "ᅦ", 4455: "ᅧ", 4456: "ᅨ", 4457: "ᅩ", 4458: "ᅪ", 4459: "ᅫ", 4460: "ᅬ", 4461: "ᅭ",
-                             4462: "ᅮ", 4463: "ᅯ", 4464: "ᅰ", 4465: "ᅱ", 4466: "ᅲ", 4467: "ᅳ", 4468: "ᅴ", 4469: "ᅵ",
-                             4520: "ᆨ", 4521: "ᆩ", 4522: "ᆪ", 4523: "ᆫ", 4524: "ᆬ", 4525: "ᆭ", 4526: "ᆮ", 4527: "ᆯ",
-                             4528: "ᆰ", 4529: "ᆱ", 4530: "ᆲ", 4531: "ᆳ", 4532: "ᆴ", 4533: "ᆵ", 4534: "ᆶ", 4535: "ᆷ",
-                             4536: "ᆸ", 4537: "ᆹ", 4538: "ᆺ", 4539: "ᆻ", 4540: "ᆼ", 4541: "ᆽ", 4542: "ᆾ", 4543: "ᆿ",
-                             4544: "ᇀ", 4545: "ᇁ", 4546: "ᇂ"}
-HANGUL_COMPATIBILITY_JAMO = {4352: chr(12593), 4353: chr(12594), 4354: chr(12596), 4355: chr(12599), 4356: chr(12600),
-                             4357: chr(12601), 4358: chr(12609), 4359: chr(12610), 4360: chr(12611), 4361: chr(12613),
-                             4362: chr(12614), 4363: chr(12615), 4364: chr(12616), 4365: chr(12617), 4366: chr(12618),
-                             4367: chr(12619), 4368: chr(12620), 4369: chr(12621), 4370: chr(12622), 4372: chr(12645),
-                             4373: chr(12646), 4378: chr(12653), 4380: chr(12654), 4381: chr(12657), 4382: chr(12658),
-                             4384: chr(12659), 4385: chr(12612), 4386: chr(12660), 4387: chr(12661), 4391: chr(12662),
-                             4393: chr(12663), 4395: chr(12664), 4396: chr(12665), 4397: chr(12666), 4398: chr(12667),
-                             4399: chr(12668), 4402: chr(12669), 4406: chr(12670), 4412: chr(12613), 4413: chr(12614),
-                             4414: chr(12613), 4415: chr(12614), 4416: chr(12671), 4421: chr(12674), 4422: chr(12675),
-                             4423: chr(12672), 4428: chr(12615), 4430: chr(12616), 4431: chr(12617), 4432: chr(12616),
-                             4433: chr(12617), 4436: chr(12618), 4437: chr(12618), 4439: chr(12676), 4440: chr(12677),
-                             4441: chr(12678), 4447: chr(12644), 4449: chr(12623), 4450: chr(12624), 4451: chr(12625),
-                             4452: chr(12626), 4453: chr(12627), 4454: chr(12628), 4455: chr(12629), 4456: chr(12630),
-                             4457: chr(12631), 4458: chr(12632), 4459: chr(12633), 4460: chr(12634), 4461: chr(12635),
-                             4462: chr(12636), 4463: chr(12637), 4464: chr(12638), 4465: chr(12639), 4466: chr(12640),
-                             4467: chr(12641), 4468: chr(12642), 4469: chr(12643), 4484: chr(12679), 4485: chr(12680),
-                             4488: chr(12681), 4497: chr(12682), 4498: chr(12683), 4500: chr(12684), 4510: chr(12685),
-                             4513: chr(12686), 4520: chr(12593), 4521: chr(12594), 4522: chr(12595), 4523: chr(12596),
-                             4524: chr(12597), 4525: chr(12598), 4526: chr(12599), 4527: chr(12601), 4528: chr(12602),
-                             4529: chr(12603), 4530: chr(12604), 4531: chr(12605), 4532: chr(12606), 4533: chr(12607),
-                             4534: chr(12608), 4535: chr(12609), 4536: chr(12610), 4537: chr(12612), 4538: chr(12613),
-                             4539: chr(12614), 4540: chr(12615), 4541: chr(12616), 4542: chr(12618), 4543: chr(12619),
-                             4544: chr(12620), 4545: chr(12621), 4546: chr(12622), 4550: chr(12646), 4551: chr(12647),
-                             4552: chr(12648), 4556: chr(12649), 4558: chr(12650), 4563: chr(12651), 4567: chr(12652),
-                             4569: chr(12653), 4572: chr(12654), 4573: chr(12655), 4575: chr(12656), 4582: chr(12664),
-                             4583: chr(12666), 4584: chr(12668), 4586: chr(12669), 4587: chr(12671), 4590: chr(12672),
-                             4592: chr(12615), 4593: chr(12674), 4594: chr(12675), 4596: chr(12676), 4601: chr(12678)}
+# HANGUL_COMPATIBILITY_JAMO = {4352: "ㄱ", 4353: "ㄲ", 4354: "ㄴ", 4355: "ㄷ", 4356: "ㄸ", 4357: "ㄹ", 4358: "ㅁ", 4359: "ㅂ",
+#                              4360: "ㅃ", 4361: "ㅅ", 4362: "ㅆ", 4363: "ㅇ", 4364: "ㅈ", 4365: "ㅉ", 4366: "ㅊ", 4367: "ㅋ",
+#                              4368: "ㅌ", 4369: "ㅍ", 4370: "ㅎ", 4449: "ᅡ", 4450: "ᅢ", 4451: "ᅣ", 4452: "ᅤ", 4453: "ᅥ",
+#                              4454: "ᅦ", 4455: "ᅧ", 4456: "ᅨ", 4457: "ᅩ", 4458: "ᅪ", 4459: "ᅫ", 4460: "ᅬ", 4461: "ᅭ",
+#                              4462: "ᅮ", 4463: "ᅯ", 4464: "ᅰ", 4465: "ᅱ", 4466: "ᅲ", 4467: "ᅳ", 4468: "ᅴ", 4469: "ᅵ",
+#                              4520: "ᆨ", 4521: "ᆩ", 4522: "ᆪ", 4523: "ᆫ", 4524: "ᆬ", 4525: "ᆭ", 4526: "ᆮ", 4527: "ᆯ",
+#                              4528: "ᆰ", 4529: "ᆱ", 4530: "ᆲ", 4531: "ᆳ", 4532: "ᆴ", 4533: "ᆵ", 4534: "ᆶ", 4535: "ᆷ",
+#                              4536: "ᆸ", 4537: "ᆹ", 4538: "ᆺ", 4539: "ᆻ", 4540: "ᆼ", 4541: "ᆽ", 4542: "ᆾ", 4543: "ᆿ",
+#                              4544: "ᇀ", 4545: "ᇁ", 4546: "ᇂ"}
 
+# Note : some characters are used for other reason : e.g. chr(4371) 'ᄓ', chr(4385) 'ᄡ'
+HANGUL_COMPATIBILITY_JAMO = {chr(4352): chr(12593), chr(4353): chr(12594), chr(4354): chr(12596), chr(4355): chr(12599),
+                             chr(4356): chr(12600), chr(4357): chr(12601), chr(4358): chr(12609), chr(4359): chr(12610),
+                             chr(4360): chr(12611), chr(4361): chr(12613), chr(4362): chr(12614), chr(4363): chr(12615),
+                             chr(4364): chr(12616), chr(4365): chr(12617), chr(4366): chr(12618), chr(4367): chr(12619),
+                             chr(4368): chr(12620), chr(4369): chr(12621), chr(4370): chr(12622), chr(4372): chr(12645),
+                             chr(4373): chr(12646), chr(4378): chr(12653), chr(4380): chr(12654), chr(4381): chr(12657),
+                             chr(4382): chr(12658), chr(4384): chr(12659), chr(4385): chr(12612), chr(4386): chr(12660),
+                             chr(4387): chr(12661), chr(4391): chr(12662), chr(4393): chr(12663), chr(4395): chr(12664),
+                             chr(4396): chr(12665), chr(4397): chr(12666), chr(4398): chr(12667), chr(4399): chr(12668),
+                             chr(4402): chr(12669), chr(4406): chr(12670), chr(4412): chr(12613), chr(4413): chr(12614),
+                             chr(4414): chr(12613), chr(4415): chr(12614), chr(4416): chr(12671), chr(4421): chr(12674),
+                             chr(4422): chr(12675), chr(4423): chr(12672), chr(4428): chr(12615), chr(4430): chr(12616),
+                             chr(4431): chr(12617), chr(4432): chr(12616), chr(4433): chr(12617), chr(4436): chr(12618),
+                             chr(4437): chr(12618), chr(4439): chr(12676), chr(4440): chr(12677), chr(4441): chr(12678),
+                             chr(4447): chr(12644), chr(4449): chr(12623), chr(4450): chr(12624), chr(4451): chr(12625),
+                             chr(4452): chr(12626), chr(4453): chr(12627), chr(4454): chr(12628), chr(4455): chr(12629),
+                             chr(4456): chr(12630), chr(4457): chr(12631), chr(4458): chr(12632), chr(4459): chr(12633),
+                             chr(4460): chr(12634), chr(4461): chr(12635), chr(4462): chr(12636), chr(4463): chr(12637),
+                             chr(4464): chr(12638), chr(4465): chr(12639), chr(4466): chr(12640), chr(4467): chr(12641),
+                             chr(4468): chr(12642), chr(4469): chr(12643), chr(4484): chr(12679), chr(4485): chr(12680),
+                             chr(4488): chr(12681), chr(4497): chr(12682), chr(4498): chr(12683), chr(4500): chr(12684),
+                             chr(4510): chr(12685), chr(4513): chr(12686), chr(4520): chr(12593), chr(4521): chr(12594),
+                             chr(4522): chr(12595), chr(4523): chr(12596), chr(4524): chr(12597), chr(4525): chr(12598),
+                             chr(4526): chr(12599), chr(4527): chr(12601), chr(4528): chr(12602), chr(4529): chr(12603),
+                             chr(4530): chr(12604), chr(4531): chr(12605), chr(4532): chr(12606), chr(4533): chr(12607),
+                             chr(4534): chr(12608), chr(4535): chr(12609), chr(4536): chr(12610), chr(4537): chr(12612),
+                             chr(4538): chr(12613), chr(4539): chr(12614), chr(4540): chr(12615), chr(4541): chr(12616),
+                             chr(4542): chr(12618), chr(4543): chr(12619), chr(4544): chr(12620), chr(4545): chr(12621),
+                             chr(4546): chr(12622), chr(4550): chr(12646), chr(4551): chr(12647), chr(4552): chr(12648),
+                             chr(4556): chr(12649), chr(4558): chr(12650), chr(4563): chr(12651), chr(4567): chr(12652),
+                             chr(4569): chr(12653), chr(4572): chr(12654), chr(4573): chr(12655), chr(4575): chr(12656),
+                             chr(4582): chr(12664), chr(4583): chr(12666), chr(4584): chr(12668), chr(4586): chr(12669),
+                             chr(4587): chr(12671), chr(4590): chr(12672), chr(4592): chr(12615), chr(4593): chr(12674),
+                             chr(4594): chr(12675), chr(4596): chr(12676), chr(4601): chr(12678)}
 ALL_SET = set([*CHOSUNG_LIST, *JUNGSUNG_LIST, *JONGSUNG_LIST])
 
 CHOSUNG_MAP = {CHOSUNG_LIST[i]: i for i in range(len(CHOSUNG_LIST))}
@@ -84,9 +104,8 @@ def explode(korean_word, allow_nonunique_assemble=True):
             if (32 <= ord(w) <= 126):  # 1바이트 문자 #ord(' ')==32
                 r_lst.append(w)
             # 중성 종성만 있는 경우는 지운다
-            if 4352 <= ord(w) <= 4546:  # convert to utf8
-                # FIXME : 'ᄡ' chr(4385) not in compatibility_jamo
-                r_lst.append(HANGUL_COMPATIBILITY_JAMO[ord(w)])
+            if w in HANGUL_COMPATIBILITY_JAMO:  # 4352 <= ord(w) <= 4546:  # convert to utf8
+                r_lst.append(HANGUL_COMPATIBILITY_JAMO[w])
         # if not ('가' <= w <= '힣'): # convenient for exception monitoring
         #     print(ord(w), w)
     return ''.join(r_lst)
@@ -144,8 +163,8 @@ def assemble(exploded_word):
         output = []
         state = -1  # -1=nonkor, 0=cho, 1=jung, 2=jong
         for c in exploded_word:
-            if 4352 <= ord(c) <= 4601:
-                c = HANGUL_COMPATIBILITY_JAMO[ord(c)]
+            if c in HANGUL_COMPATIBILITY_JAMO:  # 4352 <= ord(c) <= 4601:
+                c = HANGUL_COMPATIBILITY_JAMO[c]
             if (c in CHOSUNG_LIST) and ((state != 1) or (c not in JONGSUNG_LIST)):
                 state = 0
                 output.append(c)
