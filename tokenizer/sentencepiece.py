@@ -2,7 +2,7 @@ import sentencepiece as spm
 import os
 from .explode import explode
 from .explode import assemble
-
+import re
 
 class LinesIterator:
     def __init__(self, files, chunk_size):
@@ -23,13 +23,17 @@ class LinesIterator:
                     for line in fp.readlines():
                         line = line.strip()
                         if len(line) > 1000:
-                            line = line.split('. ')
-                            line[:-1] = [x + '.' for x in line[:-1]]
-                            if any([len(x) for x in line]):
+                            line = line.replace('\x00',' ')
+                            line = ' '.join(line.split())
+                            line = re.sub(r'(.)\1{5,}', r' \1 ', line)
+                            sep = [m.end() for m in re.finditer(r'(다\.|\. )', line)]
+                            line = [line[a:b].strip() for a,b in zip([0]+sep,sep+[len(line)])]
+                            if any([len(x)>1000 for x in line]):
                                 print(f"Too long : {line}")
                             lines.extend(line)
                         else:
                             lines.append(line)
+                    lines = [line for line in lines if line.strip()]
                     self.buffer.extend(lines)
             except StopIteration:
                 if not self.depleted:
@@ -49,7 +53,7 @@ def initialize(model_path, train_text_files, delete_previous_file=False,
     :param model_path: model directory
     :param train_text_files: one-sentence-per-line raw corpus file.
     :param delete_previous_file:
-    :param chunksize: sentence count per batch. 0 for one shot training.
+    :param chunksize: sentence count per batch. 0 for one shot training. use this option to save memory.
     :param character_coverage:
     :param vocab_size:
     :return: SentencePieceProcessor
@@ -75,7 +79,7 @@ def initialize(model_path, train_text_files, delete_previous_file=False,
             spm.SentencePieceTrainer.Train(sentence_iterator=lines_iterator, model_prefix=model_prefix,
                                            character_coverage=character_coverage, vocab_size=vocab_size,
                                            input_sentence_size=chunksize, shuffle_input_sentence=False,
-                                           model_type='unigram', )
+                                           model_type='unigram', train_extremely_large_corpus=bool(chunksize==0) )
 
     try:
         sp = spm.SentencePieceProcessor(

@@ -1,3 +1,7 @@
+# FIXME : It seems this results lots of \x00s or spaces between words...
+# FIXME : need to remove harmful patterns e.g. 귑 귑 귑 귑
+# FIXME : split too long sentences manually
+
 import re
 
 
