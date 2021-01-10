@@ -125,6 +125,7 @@ def _monkey_patch_tf_for_bert(tf):
     # Monkey patch for bert create_pretraining_data
     tf.flags = tf.compat.v1.flags
     tf.python_io = tf.compat.v1.python_io
+    ## Note : this TFRecordWriter patch only works in this file. be careful about infinite loop :(
     tf.python_io.TFRecordWriter.__init__old__ = tf.python_io.TFRecordWriter.__init__
     tf.python_io.TFRecordWriter.__init__ = lambda self, path : tf.python_io.TFRecordWriter.__init__old__(self,path,options=tf.compat.v1.io.TFRecordCompressionType.GZIP)
     tf.logging = tf.compat.v1.logging
@@ -158,3 +159,4 @@ def _monkey_patch_tf_for_bert(tf):
                 #     inputs=input_tensor, begin_norm_axis=-1, begin_params_axis=-1, scope=name)
 
     tf.contrib = Contrib()
+
