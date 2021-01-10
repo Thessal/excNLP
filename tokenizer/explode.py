@@ -6,6 +6,9 @@
 #     return convert_to_roman(unicodedata.normalize('NFD', text)) # explicit jonsung distinguish
 # def assemble(text):
 #     return unicodedata.normalize('NFC', convert_HANGUL_COMPATIBILITY_JAMO (text))
+#
+# Check out : spm_normalize
+# https://github.com/google/sentencepiece/blob/9cf136582d9cce492ba5a0cfb775f9e777fe07ea/src/spm_normalize_main.cc
 
 
 # Following code is little bit hacky. This will result loss in NFD-NFC conversion.
