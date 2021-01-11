@@ -1,0 +1,10 @@
+{
+  "_comment:": "Texts from books. SentencePiece tokenized. Segmented and indexed in pandas format.",
+  "source_files": ["data/incoming/EBOOK/*.txt"],
+  "dataset_path": "data/datasets/TEXT_BOOK",
+  "dmgr": {
+    "dmgr": "text",
+    "formatter": "heuristic",
+    "tokenizer": "sentencepiece"
+  }
+}

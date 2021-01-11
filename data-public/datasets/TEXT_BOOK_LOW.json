@@ -1,0 +1,10 @@
+{
+  "_comment:": "Texts from low books. SentencePiece tokenized. Segmented and indexed in pandas format.",
+  "source_files": ["data/incoming/EBOOK_ETC/*/*.txt"],
+  "dataset_path": "data/datasets/TEXT_BOOK_LOW",
+  "dmgr": {
+    "dmgr": "text",
+    "formatter": "heuristic",
+    "tokenizer": "sentencepiece"
+  }
+}

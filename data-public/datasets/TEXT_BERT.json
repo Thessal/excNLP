@@ -1,0 +1,10 @@
+{
+  "_comment:": "Converts raw text into tfrecords for Bert",
+  "source_files": [],
+  "dataset_path": "data/datasets/TEXT_BERT",
+  "dmgr": {
+    "dmgr": "text_bert",
+    "formatter": "heuristic",
+    "tokenizer": "sentencepiece"
+  }
+}

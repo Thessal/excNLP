@@ -25,6 +25,9 @@ Proprietary datasets
 * 1GB parallel korean texts
 * 0.2GB NER tagged korean texts
 
+Public datasets
+* NER tagged texts from CNU, KAIST, KMOU 
+
 ### TODO 
 * NER
 * Paraphraser

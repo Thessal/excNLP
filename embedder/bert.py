@@ -87,7 +87,7 @@ def _run_pretraining(bert_config_file, input_files, output_dir, I_AM_POOR):
     train.flags = flags
 
     logger = tf.get_logger()
-    logger.setLevel(logging.WARN)  # (logging.INFO)
+    logger.setLevel(logging.INFO)  # (logging.WARN)
     train.FLAGS.bert_config_file = bert_config_file
     train.FLAGS.input_file = ''  # ','.join(input_files)
     train.FLAGS.output_dir = output_dir
