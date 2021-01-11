@@ -4,39 +4,39 @@
   "dataset_path": "data/datasets/NER",
   "dmgr": {
     "dmgr": "ner",
+    "tokenizer": "sentencepiece",
     "config": [
       {
         "file": "data/incoming/NER/CNU/all.txt",
-        "format": "tsv",
         "tags": {
-          "TRM_I": "MISC",
-          "TIM_B": "TIM",
-          "LOC_I": "LOC",
-          "EVT_I": "TIM",
-          "CVL_B": "LOC",
-          "NUM_I": "NUM",
-          "PLT_I": "MISC",
-          "NUM_B": "NUM",
-          "TIM_I": "TIM",
-          "PER_B": "PER",
-          "CVL_I": "LOC",
-          "ORG_I": "ORG",
-          "FLD_I": "MISC",
-          "LOC_B": "LOC",
-          "MAT_B": "MISC",
-          "AFW_I": "MISC",
-          "PLT_B": "MISC",
-          "DAT_B": "TIM",
-          "PER_I": "PER",
-          "ANM_B": "MISC",
-          "AFW_B": "MISC",
-          "ANM_I": "MISC",
-          "FLD_B": "MISC",
-          "MAT_I": "MISC",
-          "TRM_B": "MISC",
-          "EVT_B": "TIM",
-          "DAT_I": "TIM",
-          "ORG_B": "ORG"
+          "I-TRM": "MISC",
+          "B-TIM": "TIM",
+          "I-LOC": "LOC",
+          "I-EVT": "TIM",
+          "B-CVL": "LOC",
+          "I-NUM": "NUM",
+          "I-PLT": "MISC",
+          "B-NUM": "NUM",
+          "I-TIM": "TIM",
+          "B-PER": "PER",
+          "I-CVL": "LOC",
+          "I-ORG": "ORG",
+          "I-FLD": "MISC",
+          "B-LOC": "LOC",
+          "B-MAT": "MISC",
+          "I-AFW": "MISC",
+          "B-PLT": "MISC",
+          "B-DAT": "TIM",
+          "I-PER": "PER",
+          "B-ANM": "MISC",
+          "B-AFW": "MISC",
+          "I-ANM": "MISC",
+          "B-FLD": "MISC",
+          "I-MAT": "MISC",
+          "B-TRM": "MISC",
+          "B-EVT": "TIM",
+          "I-DAT": "TIM",
+          "B-ORG": "ORG"
         },
         "pd_read_csv_kwargs": {
           "filepath_or_buffer": "data/incoming/NER/CNU/all.txt",
@@ -59,13 +59,14 @@
         ],
         "command": [
           "df['idx_sentence'] = (df['pos']=='_').cumsum()",
-          "df=df[df['pos']!='_']"
+          "df=df[df['pos']!='_']",
+          "import numpy as np",
+          "df['idx_word'] = np.arange(df.shape[0])"
         ],
         "_comment": [",sep : '.' 'O'"]
       },
       {
-        "format": {
-          "pandas_csv": {
+          "pd_read_csv_kwargs": {
             "filepath_or_buffer": "data/incoming/NER/KAIST/all.txt",
             "sep": "\t",
             "names": [
@@ -86,8 +87,7 @@
               "idx_subword"
             ],
             "quoting": 3
-          }
-        },
+          },
         "tag_frequency": [
           "{x:(df['pos']==x).sum() for x in df['pos'].unique()}",
           {
@@ -620,12 +620,14 @@
         "tags":{
           "nq": "MISC","nno": "NUM","nbu": "NUM","mag": "NUM","nnc": "NUM"
         },
+        "command": [
+          "df['idx_subword'] = df['idx_subword'] - 1"
+        ],
         "_strange": "j처->jcj, e수->etn FIXME",
         "_comment": "csv.QUOTE_NONE==3"
       },
       {
-        "format": {
-          "pandas_csv": {
+          "pd_read_csv_kwargs": {
             "filepath_or_buffer": "data/incoming/NER/KMOU/all.txt",
             "sep": "\t",
             "names": [
@@ -636,12 +638,11 @@
             ],
             "comment": "#",
             "quoting": 3
-          }
-        },
+          },
         "tags": {
           "B-PER": "PER",
           "I-PER": "PER",
-          "O": "",
+          "O": "O",
           "B-LOC": "LOC",
           "B-DUR": "TIM",
           "I-DUR": "TIM",
@@ -662,8 +663,6 @@
           "I-TIM": "TIM"
         },
         "command" : [
-          "import numpy as np",
-          "df= pd.read_csv(**kwargs)",
           "df['idx_sentence'] = (df['pos']=='_').cumsum(); df=df[df['pos']!='_']",
           "df['idx_word'] = np.arange(df.shape[0])",
           "def check_join(x) : a= str(x['subword_join']).split('+'); b=str(x['pos_etc']).split('+'); return list(zip(a,b)) if len(a)==len(b) else [(a,b)]",

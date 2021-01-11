@@ -1,6 +1,6 @@
 {
   "_comment:": "Converts raw text into tfrecords for Bert",
-  "source_files": [],
+  "source_files": ["data/incoming/EBOOK/*.txt","data/incoming/EBOOK_ETC/*/*.txt"],
   "dataset_path": "data/datasets/TEXT_BERT",
   "dmgr": {
     "dmgr": "text_bert",

@@ -13,8 +13,8 @@ config = tokenizer.sentencepiece.initialize(
 )
 
 # Dataset build (using modules)
-dmgr.builder.build_all(["TEXT_BOOK", "TEXT_BOOK_LOW", "TEXT_BERT"], config)
-dmgr.builder.build_all(["NER_KAIST", "NER_CNU", "NER_KMOU"], config)
+# dmgr.builder.build_all(["TEXT_BOOK", "TEXT_BOOK_LOW", "TEXT_BERT"], config)
+dmgr.builder.build_all(["NER"], config)
 
 # Module train
 config = embedder.bert.initialize(model_path="data/models/bert",

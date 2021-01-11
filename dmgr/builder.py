@@ -11,7 +11,7 @@ import unicodedata
 dmgrs = {"text": dmgr.text, "text_bert": dmgr.text_bert, "ner": dmgr.ner}
 
 def build(files, cfg_dataset, config, name="dmgr"):
-    print(f'{len(files)} files : {name}')
+    print(f'incoming {len(files)} raw files : {name}')
     dmgrs[cfg_dataset["dmgr"]].build(files, modules, cfg_dataset, config)
 
 
