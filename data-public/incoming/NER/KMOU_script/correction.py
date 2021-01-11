@@ -1,6 +1,10 @@
 #!/usr/bin/env python
 #-*- coding: utf8 -*-
 
+# Author : Myungchul Shin
+# Source : https://github.com/dsindex/ntagger/tree/master/data/kmou2019
+# Data : https://github.com/kmounlp/NER
+
 import sys
 import os
 from optparse import OptionParser
