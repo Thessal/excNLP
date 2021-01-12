@@ -5,7 +5,7 @@ import shutil
 import multiprocessing
 import tensorflow as tf
 
-sys.path.append(os.path.dirname(os.path.abspath(os.path.dirname(__file__))) + "dmgr/bert")
+# sys.path.append(os.path.dirname(os.path.abspath(os.path.dirname(__file__))) + "dmgr/bert")
 
 
 def build(files, modules, cfg_dataset, config):
@@ -121,6 +121,8 @@ def _create_pretraining_data(file_in, file_out):
 
 
 def _monkey_patch_tf_for_bert(tf):
+    sys.path.append(os.path.join(os.path.dirname(os.path.abspath(os.path.dirname(__file__))), "dmgr/bert"))
+
     # Monkey patch : https://docs.google.com/spreadsheets/d/1FLFJLzg7WNP6JHODX5q8BDgptKafq_slHpnHVbJIteQ/edit#gid=0
     # Monkey patch for bert create_pretraining_data
     tf.flags = tf.compat.v1.flags

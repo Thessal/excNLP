@@ -1,5 +1,6 @@
 import os
-# import sys
+import sys
+sys.path.append(os.path.join(os.path.dirname(os.path.abspath(os.path.dirname(__file__))), "dmgr/bert"))
 # import shutil
 import json
 import glob
@@ -79,7 +80,7 @@ def initialize(model_path="data/models/bert", train_dataset='TEXT_BERT', config=
 
 
 def _run_pretraining(bert_config_file, input_files, output_dir, I_AM_POOR, config):
-    flags = tf.flags  # stateful
+    flags = tf.compat.v1.flags#tf.flags  # stateful
     for name in list(flags.FLAGS):
         delattr(flags.FLAGS, name)
 
