@@ -86,10 +86,10 @@ def initialize(model_path, train_text_files, delete_previous_file=False, sample_
     :param vocab_size:
     :return: SentencePieceProcessor
     """
-
     model_prefix = os.path.join(model_path, "sentencepiece")
     path_model = model_prefix + ".model"
     path_vocab = model_prefix + ".vocab"
+    print(f'Initializing SentencePiece Tokenizer : {path_model}')
 
     if delete_previous_file and os.path.isfile(path_vocab):
         if input(f"Delete {model_prefix}.[model,vocab]? [y/n]") == 'y':
@@ -136,6 +136,7 @@ def initialize(model_path, train_text_files, delete_previous_file=False, sample_
                                                              "UNKNOWN": {"idx": 0, "token": '[UNK]'},
                                                              "BEGIN": {"idx": 1, "token": '< S >'},
                                                              "END": {"idx": 2, "token": '< T >'},
+                                                             "PADDING": {"idx": 3, "token": '[PAD]'},
                                                          }}
         # config["tokenizer"]["sentencepiece"]["detokenizer"] = detokenize
         return config

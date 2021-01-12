@@ -74,8 +74,8 @@ def _prepare_pretraining(files, vocab_file, tokenizer, formatter, config, unknow
         results = pool.starmap(_create_pretraining_data,
                                files
                                )
-    print("Errors:")
-    print('\n'.join([r for r in results if r]))
+    if results:
+        print("Errors:\n"+('\n'.join([r for r in results if r])))
 
 
 def _create_pretraining_data(file_in, file_out):

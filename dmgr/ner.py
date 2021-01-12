@@ -12,13 +12,15 @@ def build(_, modules, cfg_dataset, config):
     Returns:
 
     """
+    print(f'Building NER dataset')
+
     tokenizer = modules.tokenizers[cfg_dataset["tokenizer"]]
-    dfs = []
     file_intermediate = os.path.join("data/datasets/NER/intermediate.csv")
     file_indexed = os.path.join("data/datasets/NER/indexed.pkl.gz")
     file_processed = os.path.join("data/datasets/NER/processed.pkl.gz")
 
     if not os.path.isfile(file_intermediate):
+        dfs = []
         for cfg in cfg_dataset["config"]:
             df = pd.read_csv(**cfg['pd_read_csv_kwargs'])
 
@@ -38,7 +40,7 @@ def build(_, modules, cfg_dataset, config):
                 df['idx_subword'] = np.zeros(df.shape[0],dtype=int)
 
             tags = cfg['tags']
-            # df['pos_orig'] = df['pos']
+            df['pos_orig'] = df['pos']
             df = df.assign(pos=df['pos'].apply(lambda x : (str(tags[x]) if (x in tags) else 'O')))
             dfs.append(df)
         df = pd.concat(dfs)
@@ -54,7 +56,7 @@ def build(_, modules, cfg_dataset, config):
             'word': lambda x : ' '.join([str(y) for y in x]),
             'subword': lambda x: x.tolist(),
             'pos': lambda x: x.tolist(),
-            'pos_orig': lambda x: x.tolist()
+            # 'pos_orig': lambda x: x.tolist(),
         })
         # Process whitespace. hacky..
         df_tmp['word'] = df_tmp['word'].apply(lambda text : text.replace(' ', '').replace('_', ' ') if (' _ ' in text) else text)
@@ -70,16 +72,20 @@ def build(_, modules, cfg_dataset, config):
             my_tokenization = tokenizer.tokenize(row['word'], config=config)["text"]
             their_tokenization = row['ner_pos']
             # Assume : my_tokenization ~ my_tokenzer(their_tokenization)
-            tagged_tokens = ([(m,their_token_tagged[1])
+            tagged_tokens = ([(text,index,their_token_tagged[1])
                               for their_token_tagged in row['ner_pos']
-                              for m in tokenizer.tokenize(str(their_token_tagged[0]), config=config)["text"]
+                              for text,index in
+                                (lambda x:zip(x['text'], x['index']))(
+                                    tokenizer.tokenize(str(their_token_tagged[0]), config=config)
+                                )
                               ])
 
             tokens = [x[0] for x in tagged_tokens]
-            ner_tags = [x[1] for x in tagged_tokens]
-            result.append((tokens,ner_tags))
+            index = [x[1] for x in tagged_tokens]
+            ner_tags = [x[2] for x in tagged_tokens]
+            result.append((tokens,index,ner_tags))
 
-        df = pd.DataFrame(result, columns=["tokens","tags"])
+        df = pd.DataFrame(result, columns=["tokens","index","tags"])
         df.to_pickle(file_processed,compression='infer')
 
-    pd.read_pickle(file_processed, compression='infer')
+    #pd.read_pickle(file_processed, compression='infer')

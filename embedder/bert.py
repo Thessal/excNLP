@@ -3,7 +3,7 @@ import os
 # import shutil
 import json
 import glob
-import tensorflow as tf
+import tensorflow as tf  # tf.__version__ == '2.4.0'
 import numpy as np
 import dmgr.text_bert
 import bert as bert_for_tf2
@@ -11,7 +11,16 @@ from tensorflow import keras
 
 
 def initialize(model_path="data/models/bert", train_dataset='TEXT_BERT', config={}, I_AM_POOR=True):
-    model_ckpt = os.path.join(model_path, "model.ckpt")
+    model_ckpt = os.path.join(model_path, "model.ckpt-100000")
+    print(f'Initializing Bert : {model_ckpt}')
+
+    if "embedder" not in config.keys():
+        config["embedder"] = {}
+        config["embedder"]["bert"] = {}
+    config["embedder"]["bert"]["model_dir"] = model_path
+    config["embedder"]["bert"]["model_ckpt"] = model_ckpt
+    config["embedder"]["bert"]["max_seq_len"] = 128
+
     if not os.path.isfile(model_ckpt):
         with open(os.path.join(f'data/datasets/{train_dataset}/bert.vocab')) as fp:
             vocab_size = len(fp.readlines())
@@ -24,7 +33,7 @@ def initialize(model_path="data/models/bert", train_dataset='TEXT_BERT', config=
             "hidden_size": 768,
             "initializer_range": 0.02,
             "intermediate_size": 3072,
-            "max_position_embeddings": 512,
+            "max_position_embeddings": 512, # output embedding size
             "num_attention_heads": 12,
             "num_hidden_layers": 12,
             "pooler_fc_size": 768,
@@ -35,7 +44,7 @@ def initialize(model_path="data/models/bert", train_dataset='TEXT_BERT', config=
             "type_vocab_size": 2,
             "vocab_size": vocab_size
         }
-        if I_AM_POOR :
+        if I_AM_POOR:
             bert_config["hidden_size"] = 192
             bert_config["pooler_fc_size"] = 192
 
@@ -45,11 +54,12 @@ def initialize(model_path="data/models/bert", train_dataset='TEXT_BERT', config=
 
         input_files = glob.glob(f'data/datasets/{train_dataset}/*.tfrecord')
         output_dir = model_path
-        _run_pretraining(bert_config_file, input_files, output_dir, I_AM_POOR)
+        _run_pretraining(bert_config_file, input_files, output_dir, I_AM_POOR, config)
 
-    if "embedder" not in config.keys():
-        config["embedder"] = {}
-    # config["embedder"]["bert"]["model"] = _load_bert()
+    model, pooled_model = _load_bert(config)
+    config["embedder"]["bert"]["model"] = model
+    config["embedder"]["bert"]["pooled_model"] = pooled_model
+
     return config
 
 
@@ -68,18 +78,20 @@ def initialize(model_path="data/models/bert", train_dataset='TEXT_BERT', config=
 #     return embed_result
 
 
-def _run_pretraining(bert_config_file, input_files, output_dir, I_AM_POOR):
+def _run_pretraining(bert_config_file, input_files, output_dir, I_AM_POOR, config):
     flags = tf.flags  # stateful
     for name in list(flags.FLAGS):
         delattr(flags.FLAGS, name)
 
     dmgr.text_bert._monkey_patch_tf_for_bert(tf)
     tf.data.TFRecordDataset.__init__old__ = tf.data.TFRecordDataset.__init__
-    tf.data.TFRecordDataset.__init__ = lambda self, filenames, compression_type=None, buffer_size=None, num_parallel_reads=None : tf.data.TFRecordDataset.__init__old__(
-        self, filenames, compression_type="GZIP",
-        buffer_size=buffer_size,
-        num_parallel_reads=num_parallel_reads,
-    )
+    tf.data.TFRecordDataset.__init__ = \
+        lambda self, filenames, compression_type=None, buffer_size=None, num_parallel_reads=None: \
+            tf.data.TFRecordDataset.__init__old__(
+                self, filenames, compression_type="GZIP",
+                buffer_size=buffer_size,
+                num_parallel_reads=num_parallel_reads,
+            )
     from dmgr.bert import run_pretraining as train
 
     import logging
@@ -91,7 +103,9 @@ def _run_pretraining(bert_config_file, input_files, output_dir, I_AM_POOR):
     train.FLAGS.bert_config_file = bert_config_file
     train.FLAGS.input_file = ''  # ','.join(input_files)
     train.FLAGS.output_dir = output_dir
-    train.FLAGS.max_seq_length = 128
+    train.FLAGS.max_seq_length = config["embedder"]["bert"]["max_seq_len"]  # 128
+    # max_seq_length==128 is input size
+    # max_position_embeddings===512 is output size
     train.FLAGS.max_predictions_per_seq = 20
     train.FLAGS.do_train = True
     train.FLAGS.do_eval = True
@@ -167,50 +181,63 @@ def _run_pretraining(bert_config_file, input_files, output_dir, I_AM_POOR):
                 logger.info("  %s = %s", key, str(result[key]))
                 writer.write("%s = %s\n" % (key, str(result[key])))
 
-#
-# def _load_bert(config={}):
-#     """
-#     Loads bert model using bert-for-tf2
-#
-#     Args:
-#         config:
-#
-#     Returns:
-#         bert-for-tf2 model
-#     """
-#
-#     model_ckpt = os.path.join(self.model_dir, self.model_file)
-#     bert_params = bert_for_tf2.params_from_pretrained_ckpt(self.model_dir)
-#     # max_seq_len = bert_params.max_position_embeddings
-#
-#     l_bert = bert_for_tf2.BertModelLayer.from_params(bert_params)
-#     l_input_ids = keras.layers.Input(shape=(self.max_seq_len,), dtype='int32')
-#     # l_token_type_ids = keras.layers.Input(shape=(max_seq_len,), dtype='int32')
-#
-#     # (1 segment) using the default token_type/segment id 0
-#     bert_output = l_bert(l_input_ids)  # output: [batch_size, max_seq_len, hidden_size]
-#     # Pooling layer for sentence vector
-#     if self.pooling == "default":  # First token ([CLS]) "This output is usually not a good summary of the semantic content ..."
-#         first_token_tensor = tf.squeeze(bert_output[:, 0:1, :], axis=1)
-#         output = tf.keras.layers.Dense(bert_params.hidden_size,
-#                                        activation=tf.tanh,
-#                                        kernel_initializer=tf.keras.initializers.TruncatedNormal(
-#                                            stddev=bert_params.initializer_range))(first_token_tensor)
-#     if self.pooling == "average":
-#         output = tf.squeeze(
-#             tf.keras.layers.AveragePooling1D(pool_size=self.max_seq_len, data_format='channels_last')(bert_output),
-#             axis=1)
-#     elif self.pooling == "max":
-#         output = tf.squeeze(
-#             tf.keras.layers.MaxPool1D(pool_size=self.max_seq_len, data_format='channels_last')(bert_output),
-#             axis=1)
-#     # else if pooling == "median" : # remove zeros and do something
-#     elif self.pooling == "none":
-#         output = bert_output
-#     model = keras.Model(inputs=l_input_ids, outputs=output)
-#     model.build(input_shape=(None, self.max_seq_len))
-#
-#     l_bert.apply_adapter_freeze()
-#     bert_for_tf2.load_stock_weights(l_bert, model_ckpt)
-#
-#     return model
+
+def _load_bert(config):
+    """
+    Loads bert model using bert-for-tf2
+
+    Args:
+        config:
+
+    Returns:
+        bert-for-tf2 model
+    """
+
+    model_ckpt = config["embedder"]["bert"]["model_ckpt"]
+    bert_params = bert_for_tf2.params_from_pretrained_ckpt(config["embedder"]["bert"]["model_dir"])
+    max_seq_len = config["embedder"]["bert"]["max_seq_len"]
+    # max_seq_len = bert_params.max_position_embeddings
+
+    l_bert = bert_for_tf2.BertModelLayer.from_params(bert_params)
+    l_input_ids = keras.layers.Input(shape=(max_seq_len,), dtype='int32')
+    # l_token_type_ids = keras.layers.Input(shape=(max_seq_len,), dtype='int32')
+
+    # (1 segment) using the default token_type/segment id 0
+    bert_output = l_bert(l_input_ids)  # output: [batch_size, max_seq_len, hidden_size]
+
+    # Pooling layer for sentence vector
+    # if pooling == "default":  # First token ([CLS]) "This output is usually not a good summary of the semantic content ..."
+    #     first_token_tensor = tf.squeeze(bert_output[:, 0:1, :], axis=1)
+    #     output = tf.keras.layers.Dense(bert_params.hidden_size,
+    #                                    activation=tf.tanh,
+    #                                    kernel_initializer=tf.keras.initializers.TruncatedNormal(
+    #                                        stddev=bert_params.initializer_range))(first_token_tensor)
+    # if pooling == "average":
+    #     output = tf.squeeze(
+    #         tf.keras.layers.AveragePooling1D(pool_size=max_seq_len, data_format='channels_last')(bert_output),
+    #         axis=1)
+    # elif pooling == "max":
+    #     output = tf.squeeze(
+    #         tf.keras.layers.MaxPool1D(pool_size=self.max_seq_len, data_format='channels_last')(bert_output),
+    #         axis=1)
+    # # else if pooling == "median" : # remove zeros and do something
+    # elif pooling == "none":
+    #     output = bert_output
+    #
+    # model = keras.Model(inputs=l_input_ids, outputs=output)
+    # model.build(input_shape=(None, max_seq_len))
+
+    first_token_tensor = tf.squeeze(bert_output[:, 0:1, :], axis=1)
+    pooled_output = tf.keras.layers.Dense(bert_params.hidden_size,
+                                          activation=tf.tanh,
+                                          kernel_initializer=tf.keras.initializers.TruncatedNormal(
+                                              stddev=bert_params.initializer_range))(first_token_tensor)
+    pooled_model = keras.Model(inputs=l_input_ids, outputs=pooled_output)
+    pooled_model.build(input_shape=(None, max_seq_len))
+    model = keras.Model(inputs=l_input_ids, outputs=bert_output)
+    model.build(input_shape=(None, max_seq_len))
+
+    l_bert.apply_adapter_freeze()
+    bert_for_tf2.load_stock_weights(l_bert, model_ckpt)
+
+    return model, pooled_model

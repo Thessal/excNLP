@@ -1,6 +1,7 @@
 import dmgr.builder
 import tokenizer.sentencepiece
 import embedder.bert
+import ner.bert_ner
 import reporter.reporter as reporter
 
 # Basic module load
@@ -13,13 +14,21 @@ config = tokenizer.sentencepiece.initialize(
 )
 
 # Dataset build (using modules)
-# dmgr.builder.build_all(["TEXT_BOOK", "TEXT_BOOK_LOW", "TEXT_BERT"], config)
+dmgr.builder.build_all(["TEXT_BOOK", "TEXT_BOOK_LOW", "TEXT_BERT", "TEXT_WEB"], config)
 dmgr.builder.build_all(["NER"], config)
 
 # Module train
 config = embedder.bert.initialize(model_path="data/models/bert",
                                   train_dataset="TEXT_BERT",
                                   config=config)
+
+config = ner.bert_ner.initialize(model_path="data/models/bert_ner",
+                                  train_dataset="NER",
+                                  config=config)
+
+exit(0)
+
+# tf.keras.utils.plot_model(config["embedder"]["bert"]["model"], show_shapes=True, dpi=48)
 
 from document.document import Document
 
