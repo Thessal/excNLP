@@ -13,6 +13,7 @@ from tensorflow import keras
 
 def initialize(model_path="data/models/bert", train_dataset='TEXT_BERT', config={}, I_AM_POOR=True):
     model_ckpt = os.path.join(model_path, "model.ckpt-100000")
+    vocab_file = os.path.join(f'data/datasets/{train_dataset}/bert.vocab')
     print(f'Initializing Bert : {model_ckpt}')
 
     if "embedder" not in config.keys():
@@ -21,9 +22,10 @@ def initialize(model_path="data/models/bert", train_dataset='TEXT_BERT', config=
     config["embedder"]["bert"]["model_dir"] = model_path
     config["embedder"]["bert"]["model_ckpt"] = model_ckpt
     config["embedder"]["bert"]["max_seq_len"] = 128
+    config["embedder"]["bert"]["vocab_file"] = vocab_file
 
     if not os.path.isfile(model_ckpt):
-        with open(os.path.join(f'data/datasets/{train_dataset}/bert.vocab')) as fp:
+        with open(vocab_file, 'r') as fp:
             vocab_size = len(fp.readlines())
 
         bert_config = {

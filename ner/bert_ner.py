@@ -9,10 +9,72 @@ import math
 from .BERT_NER_TF2.model import BertNer
 from .BERT_NER_TF2.optimization import AdamWeightDecay, WarmUp
 from shutil import copyfile, copytree
+import json
 
+
+def initialize(model_path, train_dataset='NER', config={},
+               train_batch_size=32, num_train_epochs=3, warmup_proportion=0.1,
+               learning_rate=5e-5, weight_decay=0.01, adam_epsilon=1e-8, I_AM_POOR=True):
+    input_dataset_config = read_json(os.path.join("data/datasets/", train_dataset + '.json'))
+    vocab_file = os.path.join(
+        f'data/datasets/TEXT_BERT/bert.vocab')  # TODO : dmgr NER need to dump 'data/datasets/NER/bert.vocab'
+    dataset_file = os.path.join(input_dataset_config['dataset_path'], 'processed.pkl.gz')
+    train_batch_size = 4 if I_AM_POOR else train_batch_size
+
+    bert_model = config["embedder"]["bert"]["model"]
+    bert_model_pooled = config["embedder"]["bert"]["pooled_model"]
+    input_size = config["embedder"]["bert"]["max_seq_len"]
+
+    orig_bert_model_path = os.path.abspath(config["embedder"]["bert"]["model_dir"])
+    orig_bert_config_path = os.path.join(orig_bert_model_path, "bert_config.json")
+    bert_config_path = os.path.join(model_path, "bert_config.json")
+    bert_pretrain_ckpt_path = os.path.join(model_path, "pretrain_ckpt")
+
+    if not os.path.isfile(bert_config_path):
+        copyfile(orig_bert_config_path, bert_config_path)
+        # os.symlink(orig_bert_model_path, bert_ckpt_path) # TODO : Use this if overwrite is OK
+        copytree(orig_bert_model_path, bert_pretrain_ckpt_path)
+
+    label_index = {'O': 1, 'MISC': 2, 'NUM': 3, 'TIM': 4, 'ORG': 5, 'PER': 6, 'LOC': 7,
+                   '[CLS]': 8, '[SEP]': 9}
+    len_label_index = len(label_index) + 1
+    shuffled_train_data, len_train_features = _prepare_data(dataset_file, vocab_file, input_size, label_index)
+    batched_train_data = shuffled_train_data.batch(train_batch_size)
+
+    ner, train_step, loss_metric, pb_max_len = _setup_train(
+        bert_pretrain_ckpt_path, learning_rate, train_batch_size, num_train_epochs,
+        warmup_proportion, weight_decay, adam_epsilon, max_seq_length=input_size,
+        num_labels=len_label_index, len_train_features=len_train_features)
+
+    _train(batched_train_data, train_step, loss_metric, ner, model_path,
+           config, bert_pretrain_ckpt_path, label_index, pb_max_len)
+
+    return config
 
 def _pad(x, size, pad):
     return x[:size] + [pad] * max(0, size - len(x))
+
+def _train(batched_train_data, train_step, loss_metric, ner, model_path, config, bert_pretrain_ckpt_path, label_index, pb_max_len):
+    input_size = config["embedder"]["bert"]["max_seq_len"]
+    counter = 0
+
+    for train_data in batched_train_data.as_numpy_iterator():
+        input_ids, input_mask, segment_ids, valid_ids, label_ids, label_mask = train_data
+        loss = train_step(input_ids, input_mask, segment_ids, valid_ids, label_ids,label_mask)
+        loss_metric(loss)
+        print(f'{counter}/{pb_max_len}, loss : {loss_metric.result()}')
+        counter += 1
+        loss_metric.reset_states()
+
+    # model weight save
+    ner.save_weights(os.path.join(model_path, "model.h5"))
+    # copy vocab to model dir
+    copyfile(os.path.join(config["embedder"]["bert"]["vocab_file"]), os.path.join(model_path, "vocab.txt"))
+    # save label_map and max_seq_length of trained model
+    model_config = {"bert_pretrain_ckpt_path": bert_pretrain_ckpt_path, "do_lower": False,
+                    "max_seq_length": input_size, "num_labels": len(label_index),
+                    "label_map": label_index}
+    json.dump(model_config, open(os.path.join(model_path, "model_config.json"), "w"), indent=4)
 
 
 def _setup_train(ckpt_path, learning_rate, train_batch_size, num_train_epochs, warmup_proportion,
@@ -61,80 +123,7 @@ def _setup_train(ckpt_path, learning_rate, train_batch_size, num_train_epochs, w
 
     return ner, train_step, loss_metric, pb_max_len
 
-
-def initialize(model_path, train_dataset='NER', config={},
-               train_batch_size=32, num_train_epochs=3, warmup_proportion=0.1,
-               learning_rate=5e-5, weight_decay=0.01, adam_epsilon=1e-8):
-    input_dataset_config = read_json(os.path.join("data/datasets/", train_dataset + '.json'))
-    vocab_file = os.path.join(
-        f'data/datasets/TEXT_BERT/bert.vocab')  # TODO : dmgr NER need to dump 'data/datasets/NER/bert.vocab'
-    dataset_file = os.path.join(input_dataset_config['dataset_path'], 'processed.pkl.gz')
-
-    bert_model = config["embedder"]["bert"]["model"]
-    bert_model_pooled = config["embedder"]["bert"]["pooled_model"]
-    input_size = config["embedder"]["bert"]["max_seq_len"]
-
-    orig_bert_model_path = os.path.abspath(config["embedder"]["bert"]["model_dir"])
-    orig_bert_config_path = os.path.join(orig_bert_model_path, "bert_config.json")
-    bert_config_path = os.path.join(model_path, "bert_config.json")
-    # bert_ckpt_path = os.path.join(model_path, "bert_model.ckpt")
-    bert_ckpt_path = os.path.join(model_path, "ckpt")
-
-    if not os.path.isfile(bert_config_path):
-        copyfile(orig_bert_config_path, bert_config_path)
-        # os.symlink(orig_bert_model_path, bert_ckpt_path) # TODO : Use this if bert_ner do not modify orig.
-        copytree(orig_bert_model_path, bert_ckpt_path)
-
-    preparation = _prepare_data(dataset_file, vocab_file, input_size)
-    shuffled_train_data, len_train_features, len_label_index = \
-        preparation['shuffled_train_data'], preparation['len_train_features'], preparation['len_label_index']
-    batched_train_data = shuffled_train_data.batch(train_batch_size)
-
-    ner, train_step, loss_metric, pb_max_len = _setup_train(
-        bert_ckpt_path, learning_rate, train_batch_size, num_train_epochs,
-        warmup_proportion, weight_decay, adam_epsilon, max_seq_length=input_size,
-        num_labels=len_label_index, len_train_features=len_train_features)
-
-    input_ids, input_mask, segment_ids, valid_ids, label_ids,label_mask = next(batched_train_data.as_numpy_iterator())
-    loss = train_step(input_ids, input_mask, segment_ids, valid_ids, label_ids,label_mask)
-    loss_metric(loss)
-    print(f'loss : {loss_metric.result()}')
-    #
-    # for epoch in epoch_bar:
-    #     for (input_ids, input_mask, segment_ids, valid_ids, label_ids,label_mask) in progress_bar(batched_train_data, total=pb_max_len, parent=epoch_bar):
-    #         loss = train_step(input_ids, input_mask, segment_ids, valid_ids, label_ids,label_mask)
-    #         loss_metric(loss)
-    #         epoch_bar.child.comment = f'loss : {loss_metric.result()}'
-    #     loss_metric.reset_states()
-    #
-    # # model weight save
-    # ner.save_weights(os.path.join(args.output_dir, "model.h5"))
-    # # copy vocab to output_dir
-    # shutil.copyfile(os.path.join(args.bert_model, "vocab.txt"), os.path.join(args.output_dir, "vocab.txt"))
-    # # copy bert config to output_dir
-    # shutil.copyfile(os.path.join(args.bert_model, "bert_config.json"),
-    #                 os.path.join(args.output_dir, "bert_config.json"))
-    # # save label_map and max_seq_length of trained model
-    # model_config = {"bert_model": args.bert_model, "do_lower": args.do_lower_case,
-    #                 "max_seq_length": args.max_seq_length, "num_labels": num_labels,
-    #                 "label_map": label_map}
-    # json.dump(model_config, open(os.path.join(args.output_dir, "model_config.json"), "w"), indent=4)
-    # return config
-    #
-    # # model weight save
-    # ner.save_weights(os.path.join(args.output_dir, "model.h5"))
-    # # copy vocab to output_dir
-    # shutil.copyfile(os.path.join(args.bert_model, "vocab.txt"), os.path.join(args.output_dir, "vocab.txt"))
-    # # copy bert config to output_dir
-    # shutil.copyfile(os.path.join(args.bert_model, "bert_config.json"), os.path.join(args.output_dir, "bert_config.json"))
-    # # save label_map and max_seq_length of trained model
-    # model_config = {"bert_model": args.bert_model, "do_lower": args.do_lower_case,
-    #                 "max_seq_length": args.max_seq_length, "num_labels": num_labels,
-    #                 "label_map": label_map}
-    # json.dump(model_config, open(os.path.join(args.output_dir, "model_config.json"), "w"), indent=4)
-
-
-def _prepare_data(dataset_file, vocab_file, input_size):
+def _prepare_data(dataset_file, vocab_file, input_size, label_index):
     df = pd.read_pickle(dataset_file, compression="infer")
     with open(vocab_file, 'r') as fp:
         vocab = [x.strip() for x in fp.readlines()]
@@ -147,8 +136,6 @@ def _prepare_data(dataset_file, vocab_file, input_size):
         '[CLS]': vocab.index('[CLS]'),
         '[SEP]': vocab.index('[SEP]'),
     }
-    label_index = {'O': 1, 'MISC': 2, 'NUM': 3, 'TIM': 4, 'ORG': 5, 'PER': 6, 'LOC': 7,
-                   '[CLS]': 8, '[SEP]': 9}
 
     train_features = []
     for index, row in df.iterrows():
@@ -180,37 +167,4 @@ def _prepare_data(dataset_file, vocab_file, input_size):
     shuffled_train_data = train_data.shuffle(buffer_size=int(len(train_features) * 0.1),
                                              seed=12345,
                                              reshuffle_each_iteration=True)
-    return {"shuffled_train_data": shuffled_train_data,
-            "len_train_features": len(train_features),
-            "len_label_index": len(label_index)}
-# hub_classifier, hub_encoder = bert.bert_models.classifier_model(
-#     # Caution: Most of `bert_config` is ignored if you pass a hub url.
-#     bert_config=bert_config, hub_module_url=hub_url_bert, num_labels=2)
-#
-#
-# bert_classifier, bert_encoder = bert.bert_models.classifier_model(
-#     bert_config, num_labels=2)
-#
-#
-#
-# metrics = [tf.keras.metrics.SparseCategoricalAccuracy('accuracy', dtype=tf.float32)]
-# loss = tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True)
-#
-# bert_classifier.compile(
-#     optimizer=optimizer,
-#     loss=loss,
-#     metrics=metrics)
-#
-# bert_classifier.fit(
-#       glue_train, glue_train_labels,
-#       validation_data=(glue_validation, glue_validation_labels),
-#       batch_size=32,
-#       epochs=epochs)
-#
-#
-# result = bert_classifier(my_examples, training=False)
-#
-# result = tf.argmax(result).numpy()
-# result
-#
-# reloaded = tf.saved_model.load(export_dir)
+    return shuffled_train_data, len(train_features)

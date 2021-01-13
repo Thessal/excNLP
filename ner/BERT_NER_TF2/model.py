@@ -31,10 +31,13 @@ class BertNer(tf.keras.Model):
         # bert_output = bert_layer(l_input_ids)
         # _, sequence_output = bert_layer(input_word_ids, input_mask, input_type_ids)
         # self.bert = tf.keras.Model(inputs=[input_word_ids, input_mask, input_type_ids], outputs=[sequence_output])
+
         import bert as bert_for_tf2
         bert_params = bert_for_tf2.params_from_pretrained_ckpt(ckpt_dir)
         l_bert = bert_for_tf2.BertModelLayer.from_params(bert_params)
         bert_output = l_bert(l_input_ids)  # output: [batch_size, max_seq_len, hidden_size]
+        # TODO : use self.bert = config["embedder"]["bert"]["model"],
+        #  rather than calling params_from_pretrained_ckpt again.
 
         self.bert = tf.keras.Model(inputs=l_input_ids, outputs=bert_output)
         self.dropout = tf.keras.layers.Dropout(
@@ -49,7 +52,8 @@ class BertNer(tf.keras.Model):
             num_labels, kernel_initializer=initializer, activation='softmax', name='output', dtype=float_type)
 
     def call(self, input_word_ids, input_mask=None, input_type_ids=None, valid_ids=None, **kwargs):
-        sequence_output = self.bert([input_word_ids, input_mask, input_type_ids], **kwargs)
+        #sequence_output = self.bert([input_word_ids, input_mask, input_type_ids], **kwargs) # TODO : add mask to my bert model
+        sequence_output = self.bert(input_word_ids, **kwargs)
 
         valid_output = []
         for i in range(sequence_output.shape[0]):
