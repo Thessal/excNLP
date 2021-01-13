@@ -29,6 +29,7 @@ config = ner.bert_ner.initialize(model_path="data/models/bert_ner",
                                   train_dataset="NER",
                                   config=config) # depends on bert module
 
+print(config)
 exit(0)
 
 # tf.keras.utils.plot_model(config["embedder"]["bert"]["model"], show_shapes=True, dpi=48)
