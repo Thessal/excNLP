@@ -22,15 +22,18 @@ next_sentence_accuracy = 0.53
 next_sentence_loss = 0.69253767
 ```
 
-#### NER training, (3 datasets not shuffled)
-
-![Training curve](NER_training_loss.png)
+#### NER training
 
 AdamWeightDecay, SparseCategoricalCrossentropy.
 
-3 different datasets not shuffled. dataset size ~ (16572, 25488, 3420)
+Training in progress... (It takes 20hr)
+![Training curve](NER_training_loss.png)
 
-Complexity of NER is deeper than I expected...
+Some preliminary results : 
+```
+ 헬렌의 여동생 페넬로페는 임신... -> 헬렌  
+ 소크라테스가 동시대를 살던 사람들의 -> 소크라테스 
+```
 
 ### Training Dataset
 Proprietary datasets 

@@ -49,6 +49,7 @@ def initialize(model_path, train_dataset='NER', config={},
 
         if not os.path.isfile(bert_config_path):
             copyfile(orig_bert_config_path, bert_config_path)
+        if not os.path.isdir(bert_pretrain_ckpt_path):
             # os.symlink(orig_bert_model_path, bert_ckpt_path) # TODO : Use this if overwrite is OK
             copytree(orig_bert_model_path, bert_pretrain_ckpt_path)
 
@@ -178,6 +179,7 @@ def _sentencepiece_token_to_feature(token, label_index, input_size,special_index
 
 def _prepare_data(dataset_file, vocab_file, input_size, label_index, special_index):
     df = pd.read_pickle(dataset_file, compression="infer")
+    df = df.sample(frac=1).reset_index(drop=True) # shuffle
     with open(vocab_file, 'r') as fp:
         vocab = [x.strip() for x in fp.readlines()]
     # print(vocab)
