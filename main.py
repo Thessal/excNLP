@@ -28,15 +28,27 @@ config = embedder.bert.initialize(model_path="data/models/bert",
 config = ner.bert_ner.initialize(model_path="data/models/bert_ner",
                                   train_dataset="NER",
                                   config=config) # depends on bert module
-
 print(config["ner"]["bert_ner"]["train_loss_history"])
-print(ner.bert_ner.recognize("아 침착맨이랑 섹스하고 싶다", config))
-print(ner.bert_ner.recognize("안녕하세요, AI PLUS 테크블로그입니다. 오늘은 NER의 개념을 살펴보고, 포털에서 이를 어떻게 구현할 수 있을지 알아보려고 합니다.", config))
-exit(0)
+# print(ner.bert_ner.recognize("NER 테스트 문장", config))
 
 # tf.keras.utils.plot_model(config["embedder"]["bert"]["model"], show_shapes=True, dpi=48)
-
 from document.document import Document
 
 doc = Document("data/datasets/TEXT_BOOK.json", config=config)
 reporter.report_to_file(doc)
+
+
+# with open("data/incoming/EBOOK/의료윤리.txt", 'r') as fp: lines = fp.readlines()
+# person = []
+# for line in lines:
+#  recog = ner.bert_ner.recognize(line,config)
+#  print(len(recog['word']), recog['tag'], line)
+#  a = zip(recog['word'], recog['tag'])
+#  for x in a:
+#   if x[1] == 'PER':
+#    person.append(x[0])
+#  # print(list(a))
+#
+#
+
+

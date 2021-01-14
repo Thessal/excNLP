@@ -257,7 +257,7 @@ def recognize(text: str, config: dict):
     logits_confidence = [values[label].numpy() for values, label in zip(logits[0], logits_label)]
 
     words = ['CLS'] + tokens['text'] + ['SEP']
-    idx_to_valid_idx = [(index if mask else -1) for index, mask in enumerate(valid_ids[0][:len(words)+2])]
+    idx_to_valid_idx = [(index if mask==1 else -1) for index, mask in enumerate(valid_ids[0][:len(words)+2])]
     labels = [(label_map[logits_label[idx]] if idx!=-1 else 'O') for idx in idx_to_valid_idx]
     confidence = [(logits_confidence[idx] if idx!=-1 else -1) for idx in idx_to_valid_idx]
 
