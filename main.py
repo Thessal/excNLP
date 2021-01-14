@@ -29,7 +29,9 @@ config = ner.bert_ner.initialize(model_path="data/models/bert_ner",
                                   train_dataset="NER",
                                   config=config) # depends on bert module
 
-print(config)
+print(config["ner"]["bert_ner"]["train_loss_history"])
+print(ner.bert_ner.recognize("아 침착맨이랑 섹스하고 싶다", config))
+print(ner.bert_ner.recognize("안녕하세요, AI PLUS 테크블로그입니다. 오늘은 NER의 개념을 살펴보고, 포털에서 이를 어떻게 구현할 수 있을지 알아보려고 합니다.", config))
 exit(0)
 
 # tf.keras.utils.plot_model(config["embedder"]["bert"]["model"], show_shapes=True, dpi=48)

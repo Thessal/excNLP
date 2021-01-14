@@ -145,7 +145,7 @@ def initialize(model_path, train_text_files, delete_previous_file=False, sample_
         raise (e)
 
 
-def tokenize(line, mark_unk=False, config={}):
+def tokenize(line, config, mark_unk=False):
     """
     NOTE : sentencepiece automatically assembles jamo partially
     :param config: {"sp":SentencePieceProcessor}

@@ -9,27 +9,43 @@ import math
 from .BERT_NER_TF2.model import BertNer
 from .BERT_NER_TF2.optimization import AdamWeightDecay, WarmUp
 from shutil import copyfile, copytree
+import modules
 import json
 
 
 def initialize(model_path, train_dataset='NER', config={},
                train_batch_size=32, num_train_epochs=3, warmup_proportion=0.1,
                learning_rate=5e-5, weight_decay=0.01, adam_epsilon=1e-8, I_AM_POOR=True):
+
+    loss_history_summary = {}
+
+    vocab_file = os.path.join(f'data/datasets/TEXT_BERT/bert.vocab')
+    # TODO : dmgr NER need to dump 'data/datasets/NER/bert.vocab'
+    with open(vocab_file, 'r') as fp:
+        vocab = [x.strip() for x in fp.readlines()]
+    # print(vocab)
+    special_index = {
+        '[UNK]': vocab.index('[UNK]'),
+        '[PAD]': vocab.index('[PAD]'),
+        '< S >': vocab.index('< S >'),
+        '< T >': vocab.index('< T >'),
+        '[CLS]': vocab.index('[CLS]'),
+        '[SEP]': vocab.index('[SEP]'),
+    }
+
+    # bert_model = config["embedder"]["bert"]["model"]
+    # bert_model_pooled = config["embedder"]["bert"]["pooled_model"]
+    input_size = config["embedder"]["bert"]["max_seq_len"]
+
+    orig_bert_model_path = os.path.abspath(config["embedder"]["bert"]["model_dir"])
+    orig_bert_config_path = os.path.join(orig_bert_model_path, "bert_config.json")
+    bert_config_path = os.path.join(model_path, "bert_config.json")
+    bert_pretrain_ckpt_path = os.path.join(model_path, "pretrain_ckpt")
+
     if not os.path.isfile(os.path.join(model_path, "model.h5")):
         input_dataset_config = read_json(os.path.join("data/datasets/", train_dataset + '.json'))
-        vocab_file = os.path.join(
-            f'data/datasets/TEXT_BERT/bert.vocab')  # TODO : dmgr NER need to dump 'data/datasets/NER/bert.vocab'
         dataset_file = os.path.join(input_dataset_config['dataset_path'], 'processed.pkl.gz')
         train_batch_size = 4 if I_AM_POOR else train_batch_size
-
-        bert_model = config["embedder"]["bert"]["model"]
-        bert_model_pooled = config["embedder"]["bert"]["pooled_model"]
-        input_size = config["embedder"]["bert"]["max_seq_len"]
-
-        orig_bert_model_path = os.path.abspath(config["embedder"]["bert"]["model_dir"])
-        orig_bert_config_path = os.path.join(orig_bert_model_path, "bert_config.json")
-        bert_config_path = os.path.join(model_path, "bert_config.json")
-        bert_pretrain_ckpt_path = os.path.join(model_path, "pretrain_ckpt")
 
         if not os.path.isfile(bert_config_path):
             copyfile(orig_bert_config_path, bert_config_path)
@@ -37,9 +53,9 @@ def initialize(model_path, train_dataset='NER', config={},
             copytree(orig_bert_model_path, bert_pretrain_ckpt_path)
 
         label_index = {'O': 1, 'MISC': 2, 'NUM': 3, 'TIM': 4, 'ORG': 5, 'PER': 6, 'LOC': 7,
-                       '[CLS]': 8, '[SEP]': 9}
+                       '[CLS]': 8, '[SEP]': 9} # need to begin with 0
         len_label_index = len(label_index) + 1
-        shuffled_train_data, len_train_features = _prepare_data(dataset_file, vocab_file, input_size, label_index)
+        shuffled_train_data, len_train_features = _prepare_data(dataset_file, vocab_file, input_size, label_index, special_index)
         batched_train_data = shuffled_train_data.batch(train_batch_size)
 
         ner, train_step, loss_metric, pb_max_len = _setup_train(
@@ -52,9 +68,14 @@ def initialize(model_path, train_dataset='NER', config={},
         loss_history_summary = \
             {i * 100: sum(loss_history[100*i:100*i + 100]) / 100.0 for i in range(int(len(loss_history) / 100))}
 
-        if "ner" not in config:
-            config["ner"] = {}
-        config["ner"]["train_loss_history"] = loss_history_summary
+    model, model_config = _load_model(model_path, bert_pretrain_ckpt_path)
+    if "ner" not in config:
+        config["ner"] = {"bert_ner":{}}
+    config["ner"]["bert_ner"]["train_loss_history"] = loss_history_summary
+    config["ner"]["bert_ner"]["model"] = model
+    config["ner"]["bert_ner"]["model_config"] = model_config
+    config["ner"]["bert_ner"]["max_seq_len"] = input_size
+    config["ner"]["bert_ner"]["special_index"] = special_index
 
     return config
 
@@ -139,36 +160,53 @@ def _setup_train(ckpt_path, learning_rate, train_batch_size, num_train_epochs, w
 
     return ner, train_step, loss_metric, pb_max_len
 
+def _sentencepiece_token_to_feature(token, label_index, input_size,special_index):
+    tokens_text = ['[CLS]'] + token["text"] + ['[SEP]']
+    tokens_index = [special_index['[CLS]']] + token["index"] + [special_index['[SEP]']]
+    tags = [label_index[x] for x in (['[CLS]'] + token["tags"] + ['[SEP]'])]
 
-def _prepare_data(dataset_file, vocab_file, input_size, label_index):
+    train_feature = {
+        'input_ids': _pad(tokens_index, input_size, special_index["[PAD]"]),
+        'input_mask': _pad([1] * len(tokens_index), input_size, 0),
+        'segment_ids': [0] * input_size,
+        'label_ids': _pad(tags, input_size, 0),
+        'label_mask': _pad([True] * len(tags), input_size, False),
+        'valid_ids': _pad([(1 if (token.startswith(chr(9601)) or token.startswith('[')) else 0) for token in tokens_text],
+                          input_size, 0),
+    } # feature engineering can be useful
+    return train_feature
+
+def _prepare_data(dataset_file, vocab_file, input_size, label_index, special_index):
     df = pd.read_pickle(dataset_file, compression="infer")
     with open(vocab_file, 'r') as fp:
         vocab = [x.strip() for x in fp.readlines()]
     # print(vocab)
-    special_index = {
-        '[UNK]': vocab.index('[UNK]'),
-        '[PAD]': vocab.index('[PAD]'),
-        '< S >': vocab.index('< S >'),
-        '< T >': vocab.index('< T >'),
-        '[CLS]': vocab.index('[CLS]'),
-        '[SEP]': vocab.index('[SEP]'),
-    }
+    # special_index = {
+    #     '[UNK]': vocab.index('[UNK]'),
+    #     '[PAD]': vocab.index('[PAD]'),
+    #     '< S >': vocab.index('< S >'),
+    #     '< T >': vocab.index('< T >'),
+    #     '[CLS]': vocab.index('[CLS]'),
+    #     '[SEP]': vocab.index('[SEP]'),
+    # }
 
     train_features = []
     for index, row in df.iterrows():
-        tokens_text = ['[CLS]'] + row["tokens"] + ['[SEP]']
-        tokens = [special_index['[CLS]']] + row["index"] + [special_index['[SEP]']]
-        tags = [label_index[x] for x in (['[CLS]'] + row["tags"] + ['[SEP]'])]
-
-        train_feature = {
-            'input_ids': _pad(tokens, input_size, special_index["[PAD]"]),
-            'input_mask': _pad([1] * len(tokens), input_size, special_index["[PAD]"]),
-            'segment_ids': [0] * input_size,
-            'label_ids': _pad(tags, input_size, 0),
-            'label_mask': _pad([True] * len(tags), input_size, False),
-            'valid_ids': _pad([(1 if (token.startswith('_') or token.startswith('[')) else 0) for token in tokens_text],
-                              input_size, 0),
-        }
+        train_feature = _sentencepiece_token_to_feature(
+            {"text":row["tokens"],"index":row["index"],"tags":row["tags"]},
+            label_index, input_size,special_index)
+        # tokens_text = ['[CLS]'] + row["tokens"] + ['[SEP]']
+        # tokens = [special_index['[CLS]']] + row["index"] + [special_index['[SEP]']]
+        # tags = [label_index[x] for x in (['[CLS]'] + row["tags"] + ['[SEP]'])]
+        # train_feature = {
+        #     'input_ids': _pad(tokens, input_size, special_index["[PAD]"]),
+        #     'input_mask': _pad([1] * len(tokens), input_size, special_index["[PAD]"]),
+        #     'segment_ids': [0] * input_size,
+        #     'label_ids': _pad(tags, input_size, 0),
+        #     'label_mask': _pad([True] * len(tags), input_size, False),
+        #     'valid_ids': _pad([(1 if (token.startswith('_') or token.startswith('[')) else 0) for token in tokens_text],
+        #                       input_size, 0),
+        # }
         train_features.append(train_feature)
 
     all_input_ids = tf.data.Dataset.from_tensor_slices(np.asarray([f["input_ids"] for f in train_features]))
@@ -185,3 +223,44 @@ def _prepare_data(dataset_file, vocab_file, input_size, label_index):
                                              seed=12345,
                                              reshuffle_each_iteration=True)
     return shuffled_train_data, len(train_features)
+
+def _load_model(model_dir: str, ckpt_path: str, model_config: str = "model_config.json"):
+    model_config = os.path.join(model_dir,model_config)
+    model_config = json.load(open(model_config))
+    model = BertNer(ckpt_path, tf.float32, 1+model_config['num_labels'], model_config['max_seq_length'])
+    ids = tf.ones((1,128),dtype=tf.int64)
+    _ = model(ids,ids,ids,ids, training=False)
+    model.load_weights(os.path.join(model_dir,"model.h5"))
+    return model, model_config
+
+
+def recognize(text: str, config: dict):
+    model = config["ner"]["bert_ner"]["model"]
+    model_config = config["ner"]["bert_ner"]["model_config"]
+    tokenizer = modules.tokenizers['sentencepiece']
+    special_index = config["ner"]["bert_ner"]["special_index"]
+    input_size = config["ner"]["bert_ner"]["max_seq_len"]
+    label_map = {int(v): k for k, v in model_config["label_map"].items()}
+    label_index = {v:k for k,v in label_map.items()}
+
+    tokens = tokenizer.tokenize(text, config=config)
+    tokens["tags"] = ['O']*len(tokens["text"]) # dummy
+    train_feature = _sentencepiece_token_to_feature(tokens, label_index, input_size, special_index)
+
+    input_ids = tf.Variable([train_feature['input_ids']], dtype=tf.int64)
+    input_mask = tf.Variable([train_feature['input_mask']], dtype=tf.int64)
+    segment_ids = tf.Variable([train_feature['segment_ids']], dtype=tf.int64)
+    valid_ids = tf.Variable([train_feature['valid_ids']], dtype=tf.int64)
+    logits = model(input_ids, segment_ids, input_mask, valid_ids)
+    logits_label = tf.argmax(logits, axis=2)
+    logits_label = logits_label.numpy().tolist()[0]
+    logits_confidence = [values[label].numpy() for values, label in zip(logits[0], logits_label)]
+
+    words = ['CLS'] + tokens['text'] + ['SEP']
+    idx_to_valid_idx = [(index if mask else -1) for index, mask in enumerate(valid_ids[0][:len(words)+2])]
+    labels = [(label_map[logits_label[idx]] if idx!=-1 else 'O') for idx in idx_to_valid_idx]
+    confidence = [(logits_confidence[idx] if idx!=-1 else -1) for idx in idx_to_valid_idx]
+
+    # assert len(labels) == len(words)
+    output = {"word": words, "tag": labels, "confidence": confidence}
+    return output
