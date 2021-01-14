@@ -52,6 +52,7 @@ def build(_, modules, cfg_dataset, config):
 
         df_tmp = df.set_index(['idx_sentence'])
         df_tmp['word'] = np.where(df_tmp['idx_subword']==0, df_tmp['word'], '') # Remove duplicate word from subword set
+        # df_tmp['pos'] = np.where(df_tmp['idx_subword']==0, df_tmp['pos'], 'O') # Remove subword pos tag # TODO : Try this option
         df_tmp = df_tmp.groupby(level=0, axis=0).agg({ # Apply list by group
             'word': lambda x : ' '.join([str(y) for y in x]),
             'subword': lambda x: x.tolist(),

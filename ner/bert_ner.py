@@ -101,6 +101,9 @@ def _train(batched_train_data, train_step, loss_metric, ner, model_path, config,
             ner.save_weights(os.path.join(model_path, "model_checkpoint.h5")) # checkpoint
         loss_history.append(float(loss_metric.result()))
         loss_metric.reset_states()
+    loss_history_summary = {i * 100: sum(loss_history[i * 100:100 * i + 100]) / 100.0 for i in range(int(len(loss_history) / 100))}
+    json.dump(loss_history_summary, open(os.path.join(model_path, "loss_history_summary.json"), "w"), indent=4)
+    json.dump(loss_history, open(os.path.join(model_path, "loss_history_full.json"), "w"), indent=4)
 
     # model weight save
     ner.save_weights(os.path.join(model_path, "model.h5"))
@@ -258,11 +261,13 @@ def recognize(text: str, config: dict):
     logits_label = logits_label.numpy().tolist()[0]
     logits_confidence = [values[label].numpy() for values, label in zip(logits[0], logits_label)]
 
-    words = ['CLS'] + tokens['text'] + ['SEP']
-    idx_to_valid_idx = [(index if mask==1 else -1) for index, mask in enumerate(valid_ids[0][:len(words)+2])]
+    words = ['[CLS]'] + tokens['text'] + ['[SEP]']
+    idx_to_valid_idx = [(index if mask==1 else -1) for index, mask in enumerate(valid_ids[0][:len(words)])]
     labels = [(label_map[logits_label[idx]] if idx!=-1 else 'O') for idx in idx_to_valid_idx]
     confidence = [(logits_confidence[idx] if idx!=-1 else -1) for idx in idx_to_valid_idx]
 
     # assert len(labels) == len(words)
-    output = {"word": words, "tag": labels, "confidence": confidence}
+    output = {"word": words, "tag": labels, "confidence": confidence,
+              "text":tokens['text'], "raw_tokens":tokens, "raw_valid_ids": valid_ids[0],
+              "raw_logits_label":logits_label, "raw_logits":logits}
     return output
