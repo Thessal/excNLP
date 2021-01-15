@@ -663,6 +663,7 @@
           "I-TIM": "TIM"
         },
         "command" : [
+          "import numpy as np",
           "df['idx_sentence'] = (df['pos']=='_').cumsum(); df=df[df['pos']!='_']",
           "df['idx_word'] = np.arange(df.shape[0])",
           "def check_join(x) : a= str(x['subword_join']).split('+'); b=str(x['pos_etc']).split('+'); return list(zip(a,b)) if len(a)==len(b) else [(a,b)]",
