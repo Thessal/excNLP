@@ -1,0 +1,10 @@
+{
+  "_comment:": "Texts from web. SentencePiece tokenized. Segmented and indexed in pandas format.",
+  "source_files": ["data/incoming/WEB/*.txt"],
+  "dataset_path": "data/datasets/TEXT_WEB",
+  "dmgr": {
+    "dmgr": "text",
+    "formatter": "heuristic",
+    "tokenizer": "sentencepiece"
+  }
+}

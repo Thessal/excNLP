@@ -18,7 +18,7 @@ config = tokenizer.sentencepiece.initialize(
 
 # Dataset build (using modules)
 print("Building dataset")
-dmgr.builder.build_all(["TEXT_BOOK", "TEXT_BOOK_LOW", "TEXT_WEB"], config)
+dmgr.builder.build_all(["TEXT_BOOK", "TEXT_BOOK_LOW", "TEXT_WEB", "TEXT_WIKI", "TEXT_NAMUWIKI", "TEXT_NEWS_COMMENT"], config)
 dmgr.builder.build_all(["TEXT_BERT"], config)
 dmgr.builder.build_all(["NER"], config)
 

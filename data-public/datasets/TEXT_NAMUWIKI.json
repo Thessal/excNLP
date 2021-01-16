@@ -1,0 +1,10 @@
+{
+  "_comment:": "Texts from web. SentencePiece tokenized. Segmented and indexed in pandas format.",
+  "source_files": ["data/incoming/NAMU/namu.txt"],
+  "dataset_path": "data/datasets/TEXT_NAMUWIKI",
+  "dmgr": {
+    "dmgr": "text",
+    "formatter": "heuristic",
+    "tokenizer": "sentencepiece"
+  }
+}
