@@ -159,3 +159,25 @@ Attentions (https://wikidocs.net/book/2155)
    * 지수분포, 포아송분포 : 1st발생 대기시간, 단위시간당 성공횟수
    * 감마분포, 카이제곱분포 : 일반화, 정규분포 분산
 
+
+## 베이지안
+
+```
+P(A|B) = P(A^B)/P(B)
+P(A^B) 대칭에 의해 
+P(A|B) = P(B|A)*P(A)/P(B)
+
+연속확률분포에 대해 적용하면, (라그랑지안에 변수 dep;indep 형식으로 쓰는것처럼 쓰면)
+f(x;y) = f(y;x)*f(y)/f(x)
+posterior = likelihood*prior/normalization
+
+예를 들어
+f(y)가 N(a,1)로 이루어진 space상의 vector를 prior로 두고 있었다.
+그런데 측정해보니 4가 나왔다. N(3,1) 성분에 대해 이렇게 나올 likelihood는 1 sigma.
+여러번 측정해보니 N(4,2)처럼 나왔다. 이렇게 나올 likelihood는 p1x1dx * p2x2Ndx * ... = conv(N(3,1)*N(4,2)).
+보통 log likelihood 많이 쓰니깐 sum(log(p1x1)) 계산하면 된다.
+그러면 posterior는 A1*N(a1,1) + A2*N(a2,1) + ... 이런식으로 새로운 vector가 나올거다. 
+
+```
+
+결국 기본 원리는 걍 KDE랑 비슷한거임. 근데 임베딩을 해도 이게 된다는게 신기한거지. 
