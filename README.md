@@ -71,6 +71,7 @@ Proprietary datasets
 
 Public datasets
 * NER tagged texts from CNU, KAIST, KMOU 
+* Korean News (incoming, https://www.kaggle.com/junbumlee/kcbert-pretraining-corpus-korean-news-comments)
 
 TODO : 
 * Automatic dependency checking for derived datasets
