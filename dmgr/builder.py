@@ -6,9 +6,10 @@ import modules
 import dmgr.text
 import dmgr.text_bert
 import dmgr.ner
+import dmgr.parallel
 import unicodedata
 
-dmgrs = {"text": dmgr.text, "text_bert": dmgr.text_bert, "ner": dmgr.ner}
+dmgrs = {"text": dmgr.text, "text_bert": dmgr.text_bert, "ner": dmgr.ner, "parallel": dmgr.parallel}
 
 def build(files, cfg_dataset, config, name="dmgr"):
     print(f'incoming {len(files)} raw files : {name}')

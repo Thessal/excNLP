@@ -18,7 +18,7 @@ def build(files, modules, cfg_dataset, config):
         if os.path.isfile(file_out):
             continue
         df = pd.read_csv(file_in)
-        df.rename({'orig': 'high_korean', 'paraphrased': 'low_korean'})
+        df.rename(inplace=True, columns={'orig': 'high_korean', 'paraphrased': 'low_korean'})
         df['high_korean'] = df['high_korean'].apply(tokenize)
         df['low_korean'] = df['low_korean'].apply(tokenize)
         df.to_pickle(file_out, compression="infer")
